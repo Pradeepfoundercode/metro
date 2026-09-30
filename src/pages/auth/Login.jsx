@@ -50,16 +50,16 @@ export default function Login() {
   }
 
   return (
-    <div className="relative flex h-screen w-screen select-none flex-col justify-end overflow-hidden bg-black font-sans">
+    <div className="relative flex h-dvh w-full select-none flex-col justify-end overflow-hidden bg-black font-sans">
       <img
-        src={loginBg}
-        alt="Metro Background"
-        className="pointer-events-none absolute inset-0 h-full w-full object-fill"
-      />
+  src={loginBg}
+  alt="Metro Background"
+  className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+/>
 
-      <div className="relative z-20 mx-auto mb-1.5 w-[calc(100%-12px)] rounded-xl border border-cyan-400/50 bg-[#030d22]/85 p-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] backdrop-blur-sm sm:mb-2.5 sm:w-[calc(100%-24px)] sm:p-3 md:w-[calc(100%-32px)] md:p-3.5">
-        <div className="flex flex-col items-stretch justify-between gap-2 sm:gap-3 md:gap-5 lg:flex-row lg:items-center">
-          <div className="flex w-full flex-shrink-0 flex-col justify-center rounded-xl border border-red-500 bg-black/85 p-3 px-4 sm:p-3.5 sm:px-5 lg:w-[560px] xl:w-[620px]">
+     <div className="relative z-20 mx-auto mb-1.5 w-[calc(100%-16px)] max-w-[1500px] rounded-xl border border-cyan-400/50 bg-[#030d22]/85 p-2 shadow-[0_0_20px_rgba(6,182,212,0.2)] backdrop-blur-sm sm:mb-2 sm:w-[calc(100%-24px)] sm:p-3">
+        <div className="flex flex-row items-center justify-between gap-2 sm:gap-3 lg:gap-5">
+          <div className="flex min-w-0 flex-1 flex-col justify-center rounded-xl border border-red-500 bg-black/85 p-2.5 sm:p-3 md:p-3.5">
             <ul className="list-none space-y-1 text-[11px] font-bold leading-snug text-white sm:text-[12px] md:text-[12.5px]">
               <li className="flex items-start">
                 <span className="mr-1.5">#</span>
@@ -99,9 +99,9 @@ export default function Login() {
           </div>
 
           <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-1 flex-col items-center justify-end gap-2.5 sm:flex-row sm:gap-4 md:gap-5"
-          >
+  onSubmit={handleSubmit(onSubmit)}
+  className="flex min-w-0 flex-[1.15] items-center justify-center gap-2 sm:gap-3 md:gap-5"
+>
             <div className="flex w-full flex-col gap-1.5 sm:w-auto">
               <div className="flex flex-col">
                 <div className="flex items-center">
@@ -123,11 +123,11 @@ export default function Login() {
                           )
                         },
                       })}
-                      className={`h-7 w-full rounded-[3px] border bg-white px-2.5 text-xs font-semibold uppercase text-black outline-none shadow-inner sm:h-7.5 sm:text-sm ${
-                        errors.username
-                          ? 'border-red-500 ring-1 ring-red-500'
-                          : 'border-gray-300 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400'
-                      }`}
+                      className={`h-7 w-full rounded-[3px] border bg-white px-2.5 text-xs font-semibold text-black outline-none shadow-inner sm:h-8 sm:text-sm ${
+  errors.username
+    ? 'border-red-500 ring-1 ring-red-500'
+    : 'border-gray-300 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400'
+}`}
                       autoComplete="username"
                     />
                   </div>

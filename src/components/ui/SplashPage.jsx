@@ -105,8 +105,8 @@ export default function SplashPage() {
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/20" />
 
-      <div className="absolute bottom-[6%] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center">
-        <div className="relative mb-2 flex h-8 w-8 items-center justify-center">
+      <div className="absolute bottom-[4%] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center sm:bottom-[5%]">
+        <div className="relative mb-2 flex h-7 w-7 items-center justify-center sm:h-8 sm:w-8">
           <svg
             className="-rotate-90 h-full w-full"
             viewBox="0 0 24 24"
@@ -138,9 +138,9 @@ export default function SplashPage() {
           </svg>
         </div>
 
-        <p className="whitespace-nowrap text-center text-xs font-medium tracking-wide text-white">
-          Loading assets... {progress}%
-        </p>
+        <p className="whitespace-nowrap text-center text-[10px] font-medium tracking-wide text-white sm:text-xs">
+  Loading assets... {progress}%
+</p>
       </div>
     </div>
   )

@@ -6,9 +6,7 @@ export default function OrientationGuard({ children }) {
       <div className="landscape-required">
         <div className="orientation-content">
           <div className="orientation-icon">
-            <div className="phone-icon">
-              <span />
-            </div>
+            <div className="phone-icon" />
           </div>
 
           <h1>PLEASE ROTATE YOUR DEVICE</h1>

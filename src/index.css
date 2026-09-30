@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 @theme {
   --font-inter: "Inter", sans-serif;
   --font-poppins: "Poppins", sans-serif;
@@ -9,9 +8,7 @@
 
   --color-withdraw: #d23838;
   --color-deposit: #17b153;
-  
 }
-
 
 @layer base {
   * {
@@ -28,19 +25,38 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #000;
+    background: #000;
     user-select: none;
     -webkit-user-select: none;
   }
+
+  body {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  img {
+    max-width: 100%;
+  }
 }
-
-
 
 .landscape-required {
   display: none;
 }
 
-@media screen and (max-width: 1024px) and (orientation: portrait) and (pointer: coarse) {
+.landscape-app {
+  width: 100%;
+  height: 100%;
+}
+
+@media screen and (max-width: 1024px) and (orientation: portrait) {
   .landscape-app {
     display: none;
   }
@@ -60,13 +76,13 @@
     overflow: hidden;
 
     background: #080b11;
-    color: #ffffff;
+    color: #fff;
 
     padding:
-      max(24px, env(safe-area-inset-top))
-      max(24px, env(safe-area-inset-right))
-      max(24px, env(safe-area-inset-bottom))
-      max(24px, env(safe-area-inset-left));
+      max(20px, env(safe-area-inset-top))
+      max(20px, env(safe-area-inset-right))
+      max(20px, env(safe-area-inset-bottom))
+      max(20px, env(safe-area-inset-left));
   }
 
   .orientation-content {
@@ -80,14 +96,14 @@
   }
 
   .orientation-icon {
-    width: 215px;
-    height: 215px;
+    width: clamp(150px, 28vw, 215px);
+    height: clamp(150px, 28vw, 215px);
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    margin-bottom: 64px;
+    margin-bottom: clamp(35px, 6vw, 64px);
 
     border: 3px solid #ffbd00;
     border-radius: 50%;
@@ -102,10 +118,10 @@
   .phone-icon {
     position: relative;
 
-    width: 88px;
-    height: 52px;
+    width: clamp(65px, 12vw, 88px);
+    height: clamp(40px, 7vw, 52px);
 
-    border: 7px solid #ffbd00;
+    border: 6px solid #ffbd00;
     border-radius: 8px;
 
     transform: rotate(-38deg);
@@ -113,57 +129,57 @@
 
   .phone-icon::before,
   .phone-icon::after {
-    content: '';
+    content: "";
 
     position: absolute;
 
-    width: 58px;
-    height: 7px;
+    width: clamp(45px, 8vw, 58px);
+    height: 6px;
 
     background: #ffbd00;
     border-radius: 999px;
   }
 
   .phone-icon::before {
-    top: -26px;
-    left: -18px;
+    top: -22px;
+    left: -15px;
   }
 
   .phone-icon::after {
-    bottom: -26px;
-    right: -18px;
+    bottom: -22px;
+    right: -15px;
   }
 
   .orientation-content h1 {
     margin: 0;
 
-    font-size: clamp(30px, 7vw, 48px);
-    line-height: 1.25;
+    font-size: clamp(28px, 7vw, 48px);
+    line-height: 1.2;
     font-weight: 800;
-    letter-spacing: 0.5px;
   }
 
   .orientation-content p {
-    margin: 32px 0 58px;
+    margin:
+      clamp(22px, 4vw, 32px) 0
+      clamp(35px, 7vw, 58px);
 
     color: #c8c8c8;
 
-    font-size: clamp(17px, 4vw, 25px);
-    line-height: 1.55;
-    font-weight: 400;
+    font-size: clamp(16px, 4vw, 25px);
+    line-height: 1.5;
   }
 
   .rotate-message {
     width: min(100%, 620px);
-
-    min-height: 98px;
+    min-height: clamp(70px, 12vw, 98px);
 
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 16px;
 
-    padding: 18px 24px;
+    gap: clamp(8px, 2vw, 16px);
+
+    padding: 16px 20px;
 
     border: 3px solid #ffbd00;
     border-radius: 60px;
@@ -172,7 +188,7 @@
 
     color: #ffbd00;
 
-    font-size: clamp(17px, 4vw, 24px);
+    font-size: clamp(15px, 3.5vw, 24px);
     font-weight: 700;
 
     box-shadow:
@@ -181,7 +197,32 @@
   }
 
   .screen-icon {
-    font-size: 34px;
-    line-height: 1;
+    font-size: clamp(25px, 5vw, 34px);
   }
+}
+
+/* ================================
+   GAME FULL SCREEN
+================================ */
+
+.game-viewport {
+  position: fixed;
+  inset: 0;
+
+  width: 100vw;
+  height: 100dvh;
+
+  overflow: hidden;
+
+  background: #000;
+}
+
+.game-stage {
+  position: absolute;
+  inset: 0;
+
+  width: 100vw;
+  height: 100dvh;
+
+  overflow: hidden;
 }
