@@ -33,3 +33,155 @@
     -webkit-user-select: none;
   }
 }
+
+
+
+.landscape-required {
+  display: none;
+}
+
+@media screen and (max-width: 1024px) and (orientation: portrait) and (pointer: coarse) {
+  .landscape-app {
+    display: none;
+  }
+
+  .landscape-required {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100dvh;
+
+    overflow: hidden;
+
+    background: #080b11;
+    color: #ffffff;
+
+    padding:
+      max(24px, env(safe-area-inset-top))
+      max(24px, env(safe-area-inset-right))
+      max(24px, env(safe-area-inset-bottom))
+      max(24px, env(safe-area-inset-left));
+  }
+
+  .orientation-content {
+    width: min(92vw, 620px);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    text-align: center;
+  }
+
+  .orientation-icon {
+    width: 215px;
+    height: 215px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 64px;
+
+    border: 3px solid #ffbd00;
+    border-radius: 50%;
+
+    background: rgba(255, 189, 0, 0.12);
+
+    box-shadow:
+      0 0 20px rgba(255, 189, 0, 0.12),
+      inset 0 0 30px rgba(255, 189, 0, 0.08);
+  }
+
+  .phone-icon {
+    position: relative;
+
+    width: 88px;
+    height: 52px;
+
+    border: 7px solid #ffbd00;
+    border-radius: 8px;
+
+    transform: rotate(-38deg);
+  }
+
+  .phone-icon::before,
+  .phone-icon::after {
+    content: '';
+
+    position: absolute;
+
+    width: 58px;
+    height: 7px;
+
+    background: #ffbd00;
+    border-radius: 999px;
+  }
+
+  .phone-icon::before {
+    top: -26px;
+    left: -18px;
+  }
+
+  .phone-icon::after {
+    bottom: -26px;
+    right: -18px;
+  }
+
+  .orientation-content h1 {
+    margin: 0;
+
+    font-size: clamp(30px, 7vw, 48px);
+    line-height: 1.25;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  .orientation-content p {
+    margin: 32px 0 58px;
+
+    color: #c8c8c8;
+
+    font-size: clamp(17px, 4vw, 25px);
+    line-height: 1.55;
+    font-weight: 400;
+  }
+
+  .rotate-message {
+    width: min(100%, 620px);
+
+    min-height: 98px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+
+    padding: 18px 24px;
+
+    border: 3px solid #ffbd00;
+    border-radius: 60px;
+
+    background: rgba(255, 189, 0, 0.14);
+
+    color: #ffbd00;
+
+    font-size: clamp(17px, 4vw, 24px);
+    font-weight: 700;
+
+    box-shadow:
+      0 0 22px rgba(255, 189, 0, 0.18),
+      inset 0 0 20px rgba(255, 189, 0, 0.06);
+  }
+
+  .screen-icon {
+    font-size: 34px;
+    line-height: 1;
+  }
+}

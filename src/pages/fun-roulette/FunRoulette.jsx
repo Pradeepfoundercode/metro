@@ -38,7 +38,9 @@ export default function FunRoulette() {
   const navigate = useNavigate()
   const { user, updateProfile } = useAuth()
 
-  const [balance, setBalance] = useState(() => Number(user?.wallet ?? 6586))
+  const [balance, setBalance] = useState(() =>
+  Number(user?.wallet ?? 0)
+)
   const [selectedChip, setSelectedChip] = useState(1)
   const [bets, setBets] = useState({})
   const [betHistory, setBetHistory] = useState([])
@@ -53,10 +55,54 @@ export default function FunRoulette() {
   const betsRef = useRef(bets)
   betsRef.current = bets
 
-
+useEffect(() => {
+  if (user?.wallet !== undefined) {
+    setBalance(Number(user.wallet))
+  }
+}, [user?.wallet])
  
 
-  
+  const handlePlaceBet = (spot) => {
+  if (isLocked) {
+    return
+  }
+
+  if (!selectedChip) {
+    return
+  }
+
+  if (balance < selectedChip) {
+    setStatusMessage('Insufficient Balance')
+    return
+  }
+
+  setBalance((prev) => {
+    const nextBalance = prev - selectedChip
+
+    updateProfile({
+      wallet: nextBalance,
+    })
+
+    return nextBalance
+  })
+
+  setBets((prev) => ({
+    ...prev,
+    [spot]: (prev[spot] || 0) + selectedChip,
+  }))
+
+  setBetHistory((prev) => [
+    ...prev,
+    {
+      spot,
+      amount: selectedChip,
+    },
+  ])
+
+  setStatusMessage(
+    `Bet Placed: ${selectedChip} on ${spot}`
+  )
+}
 
   const handleSpecificCancelBet = () => {
     if (isLocked || betHistory.length === 0) return
@@ -272,7 +318,7 @@ export default function FunRoulette() {
   {/* 00 */}
   <button
     type="button"
-    // onClick={() => handlePlaceBet('00')}
+    onClick={() => handlePlaceBet('00')}
     className="absolute left-[0.8%] top-[1%] h-[31%] w-[6.8%] flex items-center justify-center cursor-pointer"
   >
     <img

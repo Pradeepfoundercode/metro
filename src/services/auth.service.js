@@ -5,7 +5,10 @@ const USE_MOCK = true
 
 export const loginUser = async ({ username, password }) => {
   if (USE_MOCK) {
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await new Promise((resolve) => {
+      setTimeout(resolve, 500)
+    })
+
     return {
       success: true,
       message: 'User login successfully',
@@ -25,12 +28,15 @@ export const loginUser = async ({ username, password }) => {
 
 export const getUserProfile = async (userId) => {
   if (USE_MOCK) {
-    await new Promise((resolve) => setTimeout(resolve, 200))
+    await new Promise((resolve) => {
+      setTimeout(resolve, 300)
+    })
+
     return {
       success: true,
       message: 'User found..!',
       data: {
-        id: userId || 155,
+        id: userId,
         username: 'PLAYER',
         name: 'demo',
         mobile: '0987654321',
@@ -42,5 +48,6 @@ export const getUserProfile = async (userId) => {
   }
 
   const response = await API.get(`/profile/${userId}`)
+
   return response.data
 }

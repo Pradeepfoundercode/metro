@@ -1,18 +1,23 @@
-import React, { createContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useState } from 'react'
 
 export const AuthContext = createContext(null)
 
 const USER_KEY = 'user'
 const USER_ID_KEY = 'userId'
-const AUTH_KEY = 'isAuthenticated'
 
 const getStoredUser = () => {
   try {
     const savedUser = localStorage.getItem(USER_KEY)
 
-    return savedUser ? JSON.parse(savedUser) : null
+    if (!savedUser) {
+      return null
+    }
+
+    return JSON.parse(savedUser)
   } catch {
     localStorage.removeItem(USER_KEY)
+    localStorage.removeItem(USER_ID_KEY)
+
     return null
   }
 }
@@ -20,9 +25,7 @@ const getStoredUser = () => {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(getStoredUser)
 
-  const login = (userData) => {
-    const userId = userData?.id
-
+  const login = useCallback((userData) => {
     const updatedUser = {
       ...userData,
     }
@@ -31,14 +34,12 @@ export function AuthProvider({ children }) {
 
     localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
 
-    if (userId) {
-      localStorage.setItem(USER_ID_KEY, String(userId))
+    if (updatedUser?.id) {
+      localStorage.setItem(USER_ID_KEY, String(updatedUser.id))
     }
+  }, [])
 
-    localStorage.setItem(AUTH_KEY, 'true')
-  }
-
-  const updateProfile = (profileData) => {
+  const updateProfile = useCallback((profileData) => {
     setUser((currentUser) => {
       const updatedUser = {
         ...currentUser,
@@ -47,24 +48,30 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
 
+      if (updatedUser?.id) {
+        localStorage.setItem(USER_ID_KEY, String(updatedUser.id))
+      }
+
       return updatedUser
     })
-  }
+  }, [])
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null)
 
     localStorage.removeItem(USER_KEY)
     localStorage.removeItem(USER_ID_KEY)
-    localStorage.removeItem(AUTH_KEY)
-  }
+  }, [])
+
+  const userId =
+    user?.id || localStorage.getItem(USER_ID_KEY)
+
+  const isAuthenticated = Boolean(userId)
 
   const value = {
     user,
-    userId: user?.id || localStorage.getItem(USER_ID_KEY),
-    isAuthenticated: Boolean(
-      user?.id || localStorage.getItem(USER_ID_KEY)
-    ),
+    userId,
+    isAuthenticated,
     login,
     updateProfile,
     logout,

@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+
 import { loginUser } from '../services/auth.service'
 import { useAuth } from './useAuth'
-
 
 export const useLogin = () => {
   const { login } = useAuth()
@@ -12,16 +12,22 @@ export const useLogin = () => {
 
     onSuccess: (response, variables) => {
       if (!response?.success) {
-        toast.error(response?.message || 'Login failed')
+        toast.error(
+          response?.message || 'Login failed'
+        )
+
         return
       }
 
       login({
         id: response.id,
         username: variables.username,
+        device_id: response.device_id,
       })
 
-      toast.success(response.message || 'Login successful')
+      toast.success(
+        response.message || 'Login successful'
+      )
     },
 
     onError: (error) => {

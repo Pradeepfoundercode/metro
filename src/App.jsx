@@ -2,10 +2,10 @@ import React from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 
-
 import AppRoutes from './routes/AppRoutes'
 import queryClient from './utils/queryClient'
 import { AuthProvider } from './context/AuthContext'
+import OrientationGuard from './components/ui/OrientationGuard'
 
 export default function App() {
   return (
@@ -24,7 +24,9 @@ export default function App() {
           }}
         />
 
-        <AppRoutes />
+        <OrientationGuard>
+          <AppRoutes />
+        </OrientationGuard>
       </AuthProvider>
     </QueryClientProvider>
   )
