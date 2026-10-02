@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useMutation } from '@tanstack/react-query'
@@ -14,7 +14,6 @@ import blinkGif from '../../assets/roulette/blink.gif'
 import noblink from '../../assets/roulette/noblink.png'
 import extraUpper from '../../assets/roulette/extra_box_uppre_design.png'
 import extraLower from '../../assets/roulette/extra_box_lower_design.png'
-import extraLeft from '../../assets/roulette/noblink.png'
 import extraRight from '../../assets/roulette/extra_box_right_design.png'
 import noDesignPill from '../../assets/roulette/no_designe.png'
 import extraboxleft from '../../assets/roulette/extra_box_left_design.png'
@@ -28,6 +27,9 @@ import rouletteGrid from '../../assets/roulette/grid.png'
 import waitToComplete from '../../assets/timer_36/wait_to_complete.png'
 import placeYourBets from '../../assets/timer_36/pace_your_bets.png'
 import greaterThan10Rs from '../../assets/timer_36/gr_than_10.png'
+import RouletteMachinePopup from '../../components/ui/RouletteMachinePopup'
+import GameHistoryPopup from '../../components/ui/GameHistoryPopup'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 
 
 import bet1 from "../../assets/timer_36/2.png"
@@ -91,7 +93,11 @@ export default function FunRoulette() {
   const [betHistory, setBetHistory] = useState([])
   const [showWaitToComplete, setShowWaitToComplete] = useState(false)
 
-  const [timeLeft, setTimeLeft] = useState(30)
+  const [timeLeft, setTimeLeft] = useState(25)
+  const initialTimeRef = useRef(timeLeft)
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
 
   const [winnerNumber, setWinnerNumber] = useState('0')
 
@@ -343,19 +349,37 @@ export default function FunRoulette() {
 
 
 
- useEffect(() => {
-  const timer = setInterval(() => {
-    setTimeLeft((prev) => {
-      if (prev <= 0) {
-        return 59
-      }
+  const isPopupOpenRef = useRef(isPopupOpen)
+  useEffect(() => {
+    isPopupOpenRef.current = isPopupOpen
+  }, [isPopupOpen])
 
-      return prev - 1
-    })
-  }, 1000)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 0) {
+          if (!isPopupOpenRef.current) {
+            // Normal countdown reached 0 -> Open popup & start 10s countdown
+            setIsPopupOpen(true)
+            return 10
+          } else {
+            // Popup 10s countdown reached 0 -> Close popup & resume from base round time
+            setIsPopupOpen(false)
+            return initialTimeRef.current
+          }
+        }
 
-  return () => clearInterval(timer)
-}, [])
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  const handleClosePopup = () => {
+    setIsPopupOpen(false)
+    setTimeLeft(initialTimeRef.current)
+  }
 
 
 
@@ -407,7 +431,7 @@ const placeBetMutation = useMutation({
 
               <div className="absolute bottom-[20%] left-0 right-0 flex items-center justify-center">
 
-                <span className="text-[20px] font-black tracking-wide text-white">
+                <span className="text-[20px] font-bold tracking-wide text-white">
                   {balance.toFixed(2)}
                 </span>
 
@@ -420,16 +444,17 @@ const placeBetMutation = useMutation({
             <div className="relative mt-[1%] ml-[7%] flex w-[78%] items-center justify-center">
 
   <img
-  src={timeLeft <= 20 ? blinkGif : noblink}
-  alt="Time Left"
-  className={`w-[100%] object-contain ${
-    timeLeft <= 20
-      ? 'h-[78px]'
-      : 'mt-1.5 h-[75px]'
-  }`}
-/>
+    src={noblink}
+    alt="Time Left"
+    className="w-[100%] h-[79px] object-contain"
+  />
 
-  <span className="absolute whitespace-nowrap text-[16px] font-extrabold tracking-wide text-white drop-shadow">
+  {/* Top & Bottom Blinking Border (Dip-Dip) when timeLeft <= 20 */}
+  {timeLeft <= 20 && (
+    <div className="pointer-events-none absolute inset-x-[7%] top-[19%] bottom-[38%] border-t-[5px] border-b-[5px] rounded-[4px] flash-border w-[85%]" />
+  )}
+
+  <span className="absolute  whitespace-nowrap text-[19px] top-4 font-bold tracking-wide text-white drop-shadow">
     Time Left: {timeLeft}
   </span>
 
@@ -547,7 +572,7 @@ const placeBetMutation = useMutation({
 
               <div className="absolute inset-x-0 bottom-[20%] flex items-center justify-center">
 
-                <span className="text-[34px] mb-1  font-black tracking-wide text-[#39ff14] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                <span className="text-[30px] mb-1  font-bold tracking-wide text-[#39ff14] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
                   {winnerNumber}
                 </span>
 
@@ -557,7 +582,10 @@ const placeBetMutation = useMutation({
 
             {/* HISTORY */}
 
-            <div className="relative mt-[1.5%] flex w-full items-center justify-center">
+            <div
+              onClick={() => setIsHistoryOpen(true)}
+              className="relative mt-[1.5%] flex w-full items-center justify-center cursor-pointer transition hover:brightness-110 active:scale-95"
+            >
 
               <img
                 src={extraUpper}
@@ -618,7 +646,7 @@ const placeBetMutation = useMutation({
                   className="h-[50px] w-full object-fill"
                 />
 
-                <span className="absolute text-[22px]  font-black text-white drop-shadow mr-4 mt-1">
+                <span className="absolute text-[20px]  font-bold text-white drop-shadow mr-4 mt-1">
                   Bet Ok
                 </span>
 
@@ -1113,6 +1141,96 @@ const placeBetMutation = useMutation({
 
 </div>
 
+
+
+{/* =========================
+    COLUMN SPLIT BETS - ROW 2
+========================= */}
+
+<div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
+
+  {[
+  '2-5',
+  '5-8',
+  '8-11',
+  '11-14',
+  '14-17',
+  '17-20',
+  '20-23',
+  '23-26',
+  '26-29',
+  '29-32',
+  '32-35',
+].map((spot, index) => (
+  <button
+    key={spot}
+    type="button"
+    onClick={() => handlePlaceBet(spot)}
+    style={{
+      left: `${((index + 1) / 12) * 100}%`,
+      top: '50%',
+    }}
+    className="
+      pointer-events-auto
+      absolute
+      
+      -translate-x-1/2
+      -translate-y-1/2
+      h-[40px]
+      w-[40px]
+      cursor-pointer
+    "
+  >
+    {renderChipBadge(spot)}
+  </button>
+))}
+
+</div>
+
+{/* =========================
+    COLUMN SPLIT BETS - ROW 3
+========================= */}
+
+<div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
+
+  {[
+  '1-4',
+  '4-7',
+  '7-10',
+  '10-13',
+  '13-16',
+  '16-19',
+  '19-22',
+  '22-25',
+  '25-28',
+  '28-31',
+  '31-34',
+].map((spot, index) => (
+  <button
+    key={spot}
+    type="button"
+    onClick={() => handlePlaceBet(spot)}
+    style={{
+      left: `${((index + 1) / 12) * 100}%`,
+      top: '83.33%',
+    }}
+    className="
+      pointer-events-auto
+      absolute
+      
+      -translate-x-1/2
+      -translate-y-1/2
+      h-[40px]
+      w-[40px]
+      cursor-pointer
+    "
+  >
+    {renderChipBadge(spot)}
+  </button>
+))}
+
+</div>
+
               {/* 2 TO 1 */}
 
               <div className="absolute right-[0.8%] top-[1%] grid h-[65%] w-[6.4%] grid-rows-3">
@@ -1325,13 +1443,14 @@ const placeBetMutation = useMutation({
 
             <button
               type="button"
-              className="ml-[8%] w-[18%] cursor-pointer transition hover:scale-105 active:scale-95"
+              onClick={() => setIsHistoryOpen(true)}
+              className="ml-[8%] w-[26%] cursor-pointer transition hover:scale-105 active:scale-95"
             >
 
               <img
                 src={infoIcon}
                 alt="Info"
-                className="h-auto w-full object-contain drop-shadow"
+                className="h-[60%] w-full object-fill drop-shadow"
               />
 
             </button>
@@ -1344,7 +1463,7 @@ const placeBetMutation = useMutation({
                 className="h-[70%] w-full object-fill"
               />
 
-              <span className="absolute whitespace-nowrap text-[21px] mt-2 font-bold text-white drop-shadow ml-4 sm:top-3 md:top-6">
+              <span className="absolute  text-[21px] mt-2 font-bold text-white drop-shadow ml-4  ">
                 Total Bet: {totalBet}
               </span>
 
@@ -1374,9 +1493,7 @@ const placeBetMutation = useMutation({
 
             <button
               type="button"
-              onClick={() =>
-                navigate('/dashboard')
-              }
+              onClick={() => setIsLeaveModalOpen(true)}
               className="relative flex w-[80%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
             >
 
@@ -1395,6 +1512,42 @@ const placeBetMutation = useMutation({
           </div>
 
         </div>
+
+        {/* =========================
+            ROULETTE MACHINE POPUP (SHOWS ON TIMER 0)
+        ========================= */}
+        <RouletteMachinePopup
+          isOpen={isPopupOpen}
+          onClose={handleClosePopup}
+          timeLeft={timeLeft}
+        />
+
+        {/* =========================
+            ROULETTE GAME HISTORY POPUP
+        ========================= */}
+        <GameHistoryPopup
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          userName={user?.name || user?.username || 'PRADEEP'}
+          balance={balance}
+        />
+
+        {/* =========================
+            LEAVE TABLE CONFIRMATION POPUP
+        ========================= */}
+        <ConfirmDialog
+          isOpen={isLeaveModalOpen}
+          onClose={() => setIsLeaveModalOpen(false)}
+          onConfirm={() => {
+            setIsLeaveModalOpen(false)
+            navigate('/dashboard')
+          }}
+          message={
+            <>
+              Are you sure you want to<br />go to Lobby?
+            </>
+          }
+        />
 
       </div>
     </div>

@@ -139,7 +139,7 @@ export default function Login() {
             {/* LOGIN FORM */}
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="absolute left-[780px] top-[45px] flex w-[1080px] items-center"
+              className="absolute left-[880px] top-[45px] flex w-[1080px] items-center"
             >
               <div className="flex w-[720px] flex-col gap-[12px]">
                 {/* USERNAME */}
@@ -264,11 +264,11 @@ export default function Login() {
               </div>
 
               {/* LOGIN BUTTON */}
-              <div className="flex w-[290px] items-center justify-center">
+              <div className="flex w-[210px] items-center justify-center ml-10">
                 <button
                   type="submit"
                   disabled={loginMutation.isPending}
-                  className="w-[270px] cursor-pointer border-none bg-transparent p-0 outline-none transition hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full cursor-pointer border-none bg-transparent p-0 outline-none transition hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <img
                     src={loginBtn}

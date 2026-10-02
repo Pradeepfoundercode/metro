@@ -11,7 +11,7 @@ export const loginUser = async ({ username, password }) => {
 
     return {
       success: true,
-      message: 'User login successfully',
+      message: ' login successfully',
       id: 155,
       device_id: getDeviceId(),
     }

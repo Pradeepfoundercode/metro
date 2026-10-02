@@ -555,3 +555,18 @@ body {
     drop-shadow(0 0 6px var(--chip-glow))
     drop-shadow(0 0 9px var(--chip-glow));
 }
+
+@keyframes flash {
+  0%, 100% {
+    opacity: 1;
+    border-color: #ffe600;
+  }
+  50% {
+    opacity: 0;
+    border-color: transparent;
+  }
+}
+
+.flash-border {
+  animation: flash 0.35s ease-in-out infinite;
+}

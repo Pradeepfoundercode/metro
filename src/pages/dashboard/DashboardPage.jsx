@@ -105,7 +105,7 @@ export default function DashboardPage() {
         <img
           src={cardIcon}
           alt="Metro Cards"
-          className="h-auto w-[4%] object-contain"
+          className="h-auto w-[5%] object-contain"
         />
 
         <span className="mt-[-2px] text-[clamp(7px,0.9vw,10px)]  font-black tracking-widest text-white">
@@ -124,7 +124,7 @@ export default function DashboardPage() {
         type="button"
         onClick={handleLogout}
         title="Close / Exit"
-        className="absolute right-[0.7%] top-[0.6%] z-[60] flex cursor-pointer items-center justify-center border-0 bg-transparent p-0 outline-none transition-transform duration-150 hover:scale-105 active:scale-95"
+        className="absolute right-[0.7%] top-[1%] z-[60] flex cursor-pointer items-center justify-center border-0 bg-transparent p-0 outline-none transition-transform duration-150 hover:scale-105 active:scale-95"
       >
         <img
           src={cancelBtn}
@@ -138,7 +138,7 @@ export default function DashboardPage() {
       <button
         type="button"
         title="Menu"
-        className="absolute right-[8%] top-[1%] z-[60] flex h-auto  w-[3%] cursor-pointer items-center justify-center rounded-[4px] border border-[#4ade80]/70 bg-[#22c55e] p-0 transition hover:brightness-110 active:scale-95"
+        className="absolute right-[8%] top-[1%] z-[60] flex h-auto  w-[2.5%] cursor-pointer items-center justify-center rounded-[4px] border border-[#4ade80]/70 bg-[#22c55e] p-0 transition hover:brightness-110 active:scale-95"
       >
         <svg
           viewBox="0 0 24 24"
@@ -159,7 +159,7 @@ export default function DashboardPage() {
           BALANCE
       ========================================= */}
 
-      <div className="absolute right-[15%] top-[3%] z-50 flex items-center gap-[clamp(4px,0.5vw,9px)]">
+      <div className="absolute right-[15%] top-[4.5%] z-50 flex items-center gap-[clamp(4px,0.5vw,9px)]">
 
   <span className="shrink-0 text-[clamp(9px,1.15vw,18px)] font-bold text-[#dbd14b]">
     Balance
