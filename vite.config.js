@@ -5,4 +5,10 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(),tailwindcss(),],
+  server: {
+    host: '0.0.0.0',
+    allowedHosts: [
+      'mating-core-schedule-awareness.trycloudflare.com',
+    ],
+  },
 })

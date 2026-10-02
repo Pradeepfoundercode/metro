@@ -133,15 +133,15 @@ export default function DashboardPage() {
           CENTER METRO LOGO
       ========================================= */}
 
-      <div className="pointer-events-none absolute left-1/2 top-[2%] z-40 flex -translate-x-1/2 flex-col items-center">
+      <div className="pointer-events-none absolute left-1/2 top-[1%] z-40 flex -translate-x-1/2 flex-col items-center">
 
         <img
           src={cardIcon}
           alt="Metro Cards"
-          className="h-auto w-[5%] object-contain"
+          className="h-auto w-[4%] object-contain"
         />
 
-        <span className="mt-[-2px] text-[clamp(7px,0.9vw,13px)] font-black tracking-widest text-white">
+        <span className="mt-[-2px] text-[clamp(7px,0.9vw,10px)]  font-black tracking-widest text-white">
           METRO
         </span>
 

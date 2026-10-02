@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useMutation } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
+
 
 import bgSecond from '../../assets/roulette/background_first.png'
 import funRouletteBanner from '../../assets/roulette/fun.gif'
@@ -8,9 +11,10 @@ import rouletteMachine from '../../assets/roulette/raulette_machine_num.png'
 import scoreHd from '../../assets/score_hd.gif'
 import winnerGif from '../../assets/winner.gif'
 import blinkGif from '../../assets/roulette/blink.gif'
+import noblink from '../../assets/roulette/noblink.png'
 import extraUpper from '../../assets/roulette/extra_box_uppre_design.png'
 import extraLower from '../../assets/roulette/extra_box_lower_design.png'
-import extraLeft from '../../assets/roulette/blink.gif'
+import extraLeft from '../../assets/roulette/noblink.png'
 import extraRight from '../../assets/roulette/extra_box_right_design.png'
 import noDesignPill from '../../assets/roulette/no_designe.png'
 import extraboxleft from '../../assets/roulette/extra_box_left_design.png'
@@ -21,15 +25,18 @@ import redDiamondImg from '../../assets/roulette/red_diamond.png'
 import blackDiamondImg from '../../assets/roulette/black_diamond.png'
 import infoIcon from '../../assets/info.png'
 import rouletteGrid from '../../assets/roulette/grid.png'
+import waitToComplete from '../../assets/timer_36/wait_to_complete.png'
+import placeYourBets from '../../assets/timer_36/pace_your_bets.png'
+import greaterThan10Rs from '../../assets/timer_36/gr_than_10.png'
 
-import chip1 from '../../assets/roulette/green_with_number.png'
-import chip5 from '../../assets/roulette/blue_chip_number.png'
-import chip10 from '../../assets/roulette/red_chip_number.png'
-import chip50 from '../../assets/roulette/yellow_chip_number.png'
-import chip100 from '../../assets/roulette/light_blue_chip_number.png'
-import chip500 from '../../assets/roulette/voilet_chip_number.png'
-import chip1000 from '../../assets/roulette/orange_chip_number.png'
-import chip5000 from '../../assets/roulette/dark_blue_chip_number.png'
+
+import bet1 from "../../assets/timer_36/2.png"
+import bet2 from "../../assets/timer_36/5.png"
+import bet3 from "../../assets/timer_36/50.png"
+import bet4 from "../../assets/timer_36/100.png"
+import bet5 from "../../assets/timer_36/500.png"
+import bet6 from "../../assets/timer_36/1000.png"
+import bet7 from "../../assets/timer_36/3000.png"
 
 import {
   CHIPS,
@@ -38,8 +45,40 @@ import {
   ROW_2,
   ROW_3,
 } from '../../constants/funRouletteData'
+import { placeFunRouletteBet } from '../../services/funroulette.services'
+import { getGameId } from '../../utils/helper'
 
+
+const MIN_10_BET_SPOTS = [
+  '00',
+  '1ST12',
+  '2ND12',
+  '3RD12',
+  '1-18',
+  'EVEN',
+  'RED',
+  'BLACK',
+  'ODD',
+  '19-36',
+  'ROW_1',
+  'ROW_2',
+  'ROW_3',
+]
+
+
+const CHIP_GLOW_COLORS = {
+  1: '#00ff38',
+  5: '#315cff',
+  10: '#ff2020',
+  50: '#ffe500',
+  100: '#00eaff',
+  500: '#ff32d2',
+  1000: '#ff7518',
+  5000: '#394cff',
+}
 export default function FunRoulette() {
+
+  const [showGreaterThan10, setShowGreaterThan10] = useState(false)
   const navigate = useNavigate()
   const { user, updateProfile } = useAuth()
 
@@ -50,8 +89,9 @@ export default function FunRoulette() {
   const [selectedChip, setSelectedChip] = useState(1)
   const [bets, setBets] = useState({})
   const [betHistory, setBetHistory] = useState([])
+  const [showWaitToComplete, setShowWaitToComplete] = useState(false)
 
-  const [timeLeft, setTimeLeft] = useState(33)
+  const [timeLeft, setTimeLeft] = useState(30)
 
   const [winnerNumber, setWinnerNumber] = useState('0')
 
@@ -82,140 +122,199 @@ export default function FunRoulette() {
     }
   }, [user?.wallet])
 
-  const handlePlaceBet = (spot) => {
-    if (isLocked || !selectedChip) {
-      return
-    }
+ const handlePlaceBet = (spot) => {
+  if (isLocked || !selectedChip) {
+    return
+  }
 
-    if (balance < selectedChip) {
-      setStatusMessage('Insufficient Balance')
-      return
-    }
+  
+  if (timeLeft <= 10) {
+    setShowWaitToComplete(true)
+    return
+  }
 
-    setBalance((prev) => {
-      const nextBalance = prev - selectedChip
+  const requiresMinimum10 = MIN_10_BET_SPOTS.includes(spot)
 
-      updateProfile({
-        wallet: nextBalance,
-      })
+  if (requiresMinimum10 && selectedChip < 10) {
+    setShowGreaterThan10(true)
+    return
+  }
 
-      return nextBalance
+  setShowGreaterThan10(false)
+  setShowWaitToComplete(false)
+
+  // Balance insufficient => bet nahi lagega
+  if (balance < selectedChip) {
+    return
+  }
+
+  setBalance((prev) => {
+    const nextBalance = prev - selectedChip
+
+    updateProfile({
+      wallet: nextBalance,
     })
 
-    setBets((prev) => ({
-      ...prev,
-      [spot]: (prev[spot] || 0) + selectedChip,
-    }))
+    return nextBalance
+  })
 
-    setBetHistory((prev) => [
-      ...prev,
-      {
-        spot,
-        amount: selectedChip,
-      },
-    ])
+  setBets((prev) => ({
+    ...prev,
+    [spot]: (prev[spot] || 0) + selectedChip,
+  }))
 
-    setStatusMessage(
-      `Bet Placed: ${selectedChip} on ${spot}`
-    )
-  }
+  setBetHistory((prev) => [
+    ...prev,
+    {
+      spot,
+      amount: selectedChip,
+    },
+  ])
+}
 
   const handleSpecificCancelBet = () => {
-    if (
-      isLocked ||
-      betHistory.length === 0
-    ) {
-      return
+  if (isLocked) {
+    return
+  }
+
+  if (timeLeft <= 10) {
+    toast.error("You can't cancel bets in the last 10 seconds")
+    return
+  }
+
+  if (betHistory.length === 0) {
+    return
+  }
+
+  const lastBet =
+    betHistory[betHistory.length - 1]
+
+  setBetHistory((prev) =>
+    prev.slice(0, -1)
+  )
+
+  setBalance((prev) => {
+    const nextBalance =
+      prev + lastBet.amount
+
+    updateProfile({
+      wallet: nextBalance,
+    })
+
+    return nextBalance
+  })
+
+  setBets((prev) => {
+    const currentAmount =
+      prev[lastBet.spot] || 0
+
+    const updatedAmount =
+      currentAmount - lastBet.amount
+
+    const nextBets = {
+      ...prev,
     }
 
-    const lastBet =
-      betHistory[betHistory.length - 1]
+    if (updatedAmount <= 0) {
+      delete nextBets[lastBet.spot]
+    } else {
+      nextBets[lastBet.spot] =
+        updatedAmount
+    }
 
-    setBetHistory((prev) =>
-      prev.slice(0, -1)
-    )
+    return nextBets
+  })
 
-    setBalance((prev) => {
-      const nextBalance =
-        prev + lastBet.amount
+  // setStatusMessage('Last bet cancelled')
+}
 
-      updateProfile({
-        wallet: nextBalance,
-      })
-
-      return nextBalance
-    })
-
-    setBets((prev) => {
-      const currentAmount =
-        prev[lastBet.spot] || 0
-
-      const updatedAmount =
-        currentAmount - lastBet.amount
-
-      const nextBets = {
-        ...prev,
-      }
-
-      if (updatedAmount <= 0) {
-        delete nextBets[lastBet.spot]
-      } else {
-        nextBets[lastBet.spot] =
-          updatedAmount
-      }
-
-      return nextBets
-    })
-
-    setStatusMessage(
-      'Last bet cancelled'
-    )
+ const handleCancelBet = () => {
+  if (isLocked) {
+    return
   }
+
+  if (timeLeft <= 10) {
+    toast.error("You can't cancel bets in the last 10 seconds")
+    return
+  }
+
+  if (betHistory.length === 0) {
+    return
+  }
+
+  const refundAmount = betHistory.reduce(
+    (total, bet) => total + bet.amount,
+    0
+  )
+
+  setBetHistory([])
+  setBets({})
+
+  setBalance((prev) => {
+    const nextBalance =
+      prev + refundAmount
+
+    updateProfile({
+      wallet: nextBalance,
+    })
+
+    return nextBalance
+  })
+
+  // setStatusMessage(
+  //   `All bets cancelled: ${refundAmount} refunded`
+  // )
+}
 
   const handleBetOk = () => {
-    if (totalBet <= 0) {
-      setStatusMessage(
-        'Please place a bet first'
-      )
-
-      return
-    }
-
-    setStatusMessage(
-      `Bet Accepted: Total ${totalBet} placed. Good Luck!`
-    )
+  if (betHistory.length === 0) {
+    return
   }
+
+  const betsPayload = betHistory.map((bet) => ({
+    game_id: getGameId(bet.spot),
+    amount: bet.amount,
+  }))
+
+  const payload = {
+    user_id: '156',
+    games_no: '450538',
+    bets: betsPayload,
+  }
+
+  placeBetMutation.mutate(payload)
+}
 
   const getChipAsset = (amount) => {
     if (amount >= 5000) {
-      return chip5000
+      return bet6
     }
 
     if (amount >= 1000) {
-      return chip1000
+      return bet5
     }
 
     if (amount >= 500) {
-      return chip500
+      return bet4
     }
 
     if (amount >= 100) {
-      return chip100
+      return bet3
     }
 
     if (amount >= 50) {
-      return chip50
+      return bet1
     }
 
     if (amount >= 10) {
-      return chip10
+      return bet2
     }
 
     if (amount >= 5) {
-      return chip5
+      return bet1
     }
 
-    return chip1
+    return bet1
   }
 
   const renderChipBadge = (spot) => {
@@ -231,16 +330,51 @@ export default function FunRoulette() {
           <img
             src={getChipAsset(value)}
             alt="chip"
-            className="h-[52%] w-[68%] max-h-8 max-w-12 object-contain drop-shadow"
+            className=" max-h-11 max-w-14 object-contain drop-shadow"
           />
 
-          <span className="absolute text-[clamp(7px,0.65vw,11px)] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
+          <span className="absolute text-[clamp(7px,0.65vw,11px)] md:text-[15px] font-black  ">
             {value}
           </span>
         </div>
       </div>
     )
   }
+
+
+
+ useEffect(() => {
+  const timer = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 0) {
+        return 59
+      }
+
+      return prev - 1
+    })
+  }, 1000)
+
+  return () => clearInterval(timer)
+}, [])
+
+
+
+
+
+const placeBetMutation = useMutation({
+  mutationFn: placeFunRouletteBet,
+
+  onSuccess: (data) => {
+    // setStatusMessage('Bet placed successfully')
+    setIsLocked(true)
+  },
+
+  onError: (error) => {
+    setStatusMessage(
+      error?.response?.data?.message || 'Something went wrong'
+    )
+  },
+})
 
   return (
     <div className="game-viewport select-none">
@@ -261,19 +395,19 @@ export default function FunRoulette() {
 
           {/* SCORE */}
 
-          <div className="absolute left-[2.3%] top-[7%] flex w-[19%] flex-col items-start">
+          <div className="absolute left-[4%] top-[20%] flex w-[23%] flex-col items-start">
 
             <div className="relative flex w-full items-center justify-center">
 
               <img
-                src={scoreHd}
-                alt="Score"
-                className="h-auto w-full object-contain"
-              />
+  src={scoreHd}
+  alt="Score"
+  className="h-[85px] w-[200%] object-fill"
+/>
 
               <div className="absolute bottom-[20%] left-0 right-0 flex items-center justify-center">
 
-                <span className="text-[12px] md:text-[20px] font-black tracking-wide text-white">
+                <span className="text-[20px] font-black tracking-wide text-white">
                   {balance.toFixed(2)}
                 </span>
 
@@ -283,117 +417,123 @@ export default function FunRoulette() {
 
             {/* TIME */}
 
-            <div className="relative mt-[3%] ml-[7%] flex w-[78%] items-center justify-center">
+            <div className="relative mt-[1%] ml-[7%] flex w-[78%] items-center justify-center">
 
-              <img
-                src={extraLeft}
-                alt="Time Left"
-                className="h-auto w-full object-contain"
-              />
+  <img
+  src={timeLeft <= 20 ? blinkGif : noblink}
+  alt="Time Left"
+  className={`w-[100%] object-contain ${
+    timeLeft <= 20
+      ? 'h-[78px]'
+      : 'mt-1.5 h-[75px]'
+  }`}
+/>
 
-              <span className="absolute whitespace-nowrap text-[clamp(8px,0.78vw,14px)] font-extrabold tracking-wide text-white drop-shadow">
-                Time Left: {timeLeft}
-              </span>
+  <span className="absolute whitespace-nowrap text-[16px] font-extrabold tracking-wide text-white drop-shadow">
+    Time Left: {timeLeft}
+  </span>
 
-            </div>
+</div>
 
             {/* CHIPS */}
 
-            <div className="mt-[4%] flex w-full flex-col gap-1.5">
+           <div className="mt-[4%] flex w-full flex-col gap-3">
 
-              <div className="flex items-center justify-center gap-[4%]">
+  <div className="flex items-center justify-center gap-[5%]">
+    {CHIPS.slice(0, 4).map((chip) => (
+      <button
+        key={chip.value}
+        type="button"
+        onClick={() => setSelectedChip(chip.value)}
+        style={{
+          '--chip-glow': CHIP_GLOW_COLORS[chip.value],
+        }}
+        className={`relative w-[25%] cursor-pointer transition-transform duration-200 ${
+          selectedChip === chip.value
+            ? 'scale-120 selected-chip-glow'
+            : 'hover:scale-105 active:scale-95'
+        }`}
+      >
+        <img
+          src={chip.img}
+          alt={`chip ${chip.value}`}
+          className="h-auto w-full object-contain"
+        />
+      </button>
+    ))}
+  </div>
 
-                {CHIPS.slice(0, 4).map(
-                  (chip) => (
-                    <button
-                      key={chip.value}
-                      type="button"
-                      onClick={() =>
-                        setSelectedChip(
-                          chip.value
-                        )
-                      }
-                      className={`relative w-[22%] cursor-pointer transition-transform ${
-                        selectedChip ===
-                        chip.value
-                          ? 'scale-110'
-                          : 'hover:scale-105 active:scale-95'
-                      }`}
-                    >
-                      <img
-                        src={chip.img}
-                        alt={`chip ${chip.value}`}
-                        className="h-auto w-full object-contain"
-                      />
-                    </button>
-                  )
-                )}
+  <div className="flex items-center justify-center gap-[5%]">
+    {CHIPS.slice(4, 8).map((chip) => (
+      <button
+        key={chip.value}
+        type="button"
+        onClick={() => setSelectedChip(chip.value)}
+        style={{
+          '--chip-glow': CHIP_GLOW_COLORS[chip.value],
+        }}
+        className={`relative w-[25%] cursor-pointer transition-transform duration-200 ${
+          selectedChip === chip.value
+            ? 'scale-120 selected-chip-glow'
+            : 'hover:scale-105 active:scale-95'
+        }`}
+      >
+        <img
+          src={chip.img}
+          alt={`chip ${chip.value}`}
+          className="h-auto w-full object-contain"
+        />
+      </button>
+    ))}
+  </div>
 
-              </div>
-
-              <div className="flex items-center justify-center gap-[4%]">
-
-                {CHIPS.slice(4, 8).map(
-                  (chip) => (
-                    <button
-                      key={chip.value}
-                      type="button"
-                      onClick={() =>
-                        setSelectedChip(
-                          chip.value
-                        )
-                      }
-                      className={`relative w-[22%] cursor-pointer transition-transform ${
-                        selectedChip ===
-                        chip.value
-                          ? 'scale-110'
-                          : 'hover:scale-105 active:scale-95'
-                      }`}
-                    >
-                      <img
-                        src={chip.img}
-                        alt={`chip ${chip.value}`}
-                        className="h-auto w-full object-contain"
-                      />
-                    </button>
-                  )
-                )}
-
-              </div>
-
-            </div>
+</div>
 
           </div>
 
           {/* CENTER */}
 
-          <div className="absolute left-1/2 top-[0.8%] z-10 flex w-[28.5%] -translate-x-1/2 flex-col items-center">
+        <div className="absolute left-1/2 top-0 z-50 flex w-[34%] -translate-x-1/2 flex-col items-center">
 
-            {/* FUN ROULETTE */}
+  {/* FUN ROULETTE BANNER */}
 
-            <img
-              src={funRouletteBanner}
-              alt="Fun Roulette"
-              className="h-[60%] w-full object-contain"
-            />
+  <img
+    src={funRouletteBanner}
+    alt="Fun Roulette"
+    className="h-[95px] w-[300%] object-fill"
+  />
 
-            {/* WHEEL */}
+  {/* ROULETTE MACHINE */}
 
-            <div className="relative mt-[0.3%] flex w-[75%] items-center justify-center">
+  <div className="relative mt-[6%] flex w-full items-center justify-center">
+    <img
+      src={rouletteMachine}
+      alt="Roulette Wheel"
+      className="h-[300px] w-[500px] object-fill drop-shadow-[0_8px_18px_rgba(0,0,0,0.9)]"
+    />
+  </div>
 
-              <img
-                src={rouletteMachine}
-                alt="Roulette Wheel"
-                className="h-auto w-full object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.9)]"
-              />
+  {/* PLACE YOUR BETS */}
 
-            </div>
+  <div className="relative -mt-[2px] flex w-[85%] items-center justify-center">
+    <img
+  src={
+    timeLeft <= 10
+      ? waitToComplete
+      : showGreaterThan10
+        ? greaterThan10Rs
+        : placeYourBets
+  }
+  alt="Bet Message"
+  className="h-[30px] w-full object-fill"
+/>
+  </div>
 
-          </div>
+</div>
 
           {/* WINNER / RIGHT */}
 
-          <div className="absolute right-[2.2%] top-[6%] flex w-[21%] flex-col items-end">
+          <div className="absolute right-[4%] top-[20%] flex w-[21%] flex-col items-end">
 
             {/* WINNER */}
 
@@ -402,12 +542,12 @@ export default function FunRoulette() {
               <img
                 src={winnerGif}
                 alt="Winner"
-                className="h-auto w-full object-contain"
+                className="h-[140px] w-[230%] object-fill"
               />
 
               <div className="absolute inset-x-0 bottom-[20%] flex items-center justify-center">
 
-                <span className="text-[clamp(10px,1.1vw,20px)] font-black tracking-wide text-[#39ff14] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                <span className="text-[34px] mb-1  font-black tracking-wide text-[#39ff14] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
                   {winnerNumber}
                 </span>
 
@@ -422,7 +562,7 @@ export default function FunRoulette() {
               <img
                 src={extraUpper}
                 alt="History"
-                className="h-auto w-full object-contain"
+                className="h-[70px] w-full object-contain"
               />
 
               <div className="absolute inset-x-[18%] top-[30%] flex items-center justify-around">
@@ -443,7 +583,7 @@ export default function FunRoulette() {
                     return (
                       <span
                         key={`${value}-${index}`}
-                        className={`text-[9px] md:text-[18px] font-black drop-shadow ${
+                        className={`text-[20px]  font-black drop-shadow ${
                           value === '0' ||
                           value === '00'
                             ? 'text-[#39ff14]'
@@ -469,22 +609,42 @@ export default function FunRoulette() {
               <button
                 type="button"
                 onClick={handleBetOk}
-                className="relative mr-[8%] flex w-[62%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
+                className="relative mr-[8%] flex w-[80%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
               >
 
                 <img
                   src={extraRight}
                   alt="Bet Ok"
-                  className="h-[50%] w-full object-contain"
+                  className="h-[50px] w-full object-fill"
                 />
 
-                <span className="absolute text-[11px] md:text-[18px] font-black text-white drop-shadow mr-4 mt-1">
+                <span className="absolute text-[22px]  font-black text-white drop-shadow mr-4 mt-1">
                   Bet Ok
                 </span>
 
               </button>
 
-              <div className="flex w-full items-center justify-end gap-[2%]">
+              <div className="flex w-[125%] items-center justify-end gap-[2%]">
+
+                <button
+                  type="button"
+                  onClick={
+                    handleCancelBet
+                  }
+                  className="relative flex w-[50%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
+                >
+
+                  <img
+                    src={noDesignPill}
+                    alt="Cancel Bet"
+                    className="h-[40px] w-full object-fill"
+                  />
+
+                  <span className="absolute whitespace-nowrap text-[20px] font-bold text-white drop-shadow">
+                    Cancel Bet
+                  </span>
+
+                </button>
 
                 <button
                   type="button"
@@ -496,31 +656,11 @@ export default function FunRoulette() {
 
                   <img
                     src={noDesignPill}
-                    alt="Cancel Bet"
-                    className="h-auto w-full object-fill"
-                  />
-
-                  <span className="absolute whitespace-nowrap text-[clamp(6px,0.6vw,11px)] font-bold text-white drop-shadow">
-                    Cancel Bet
-                  </span>
-
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    handleSpecificCancelBet
-                  }
-                  className="relative flex w-[49%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
-                >
-
-                  <img
-                    src={noDesignPill}
                     alt="Specific Cancel Bet"
-                    className="h-auto w-full object-fill"
+                    className="h-[40px] w-full object-fill"
                   />
 
-                  <span className="absolute whitespace-nowrap text-[clamp(6px,0.6vw,11px)] font-bold text-white drop-shadow">
+                  <span className="absolute whitespace-nowrap text-[20px] font-bold text-white drop-shadow">
                     Specific Cancel Bet
                   </span>
 
@@ -538,7 +678,7 @@ export default function FunRoulette() {
             BETTING GRID
         ========================= */}
 
-        <div className="absolute left-[5.3%] right-[6.5%] top-[50%] z-40">
+       <div className="absolute left-[3.5%] right-[4.5%] top-[50.5%] z-40">
 
           <div className="relative aspect-[936/209] w-full">
 
@@ -566,7 +706,7 @@ export default function FunRoulette() {
                   className="h-[70%] w-[82%] object-contain"
                 />
 
-                <span className="absolute text-[clamp(7px,0.75vw,14px)] font-black text-white drop-shadow">
+                <span className="absolute text-[22px] font-black text-white drop-shadow">
                   00
                 </span>
 
@@ -598,7 +738,7 @@ export default function FunRoulette() {
                   className="h-[70%] w-[82%] object-contain"
                 />
 
-                <span className="absolute text-[clamp(7px,0.75vw,14px)] font-black text-white drop-shadow">
+                <span className="absolute text-[22px] font-black text-white drop-shadow">
                   0
                 </span>
 
@@ -616,72 +756,366 @@ export default function FunRoulette() {
 
               {/* NUMBER GRID */}
 
-              <div className="absolute left-[8%] top-[1%] grid h-[61%] w-[84%] grid-cols-12 grid-rows-3">
+              <div className="absolute left-[8%] top-[1%] z-10 grid h-[65%] w-[84.5%] grid-cols-12 grid-rows-3">
 
-                {[
-                  ROW_1,
-                  ROW_2,
-                  ROW_3,
-                ].map((row) =>
-                  row.map((number) => {
+  {[
+    ROW_1,
+    ROW_2,
+    ROW_3,
+  ].map((row) =>
+    row.map((number) => {
 
-                    const isRed =
-                      RED_NUMBERS.includes(
-                        number
-                      )
+      const isRed = RED_NUMBERS.includes(number)
 
-                    const spot =
-                      String(number)
+      const spot = String(number)
 
-                    return (
-                      <button
-                        key={number}
-                        type="button"
-                        onClick={() =>
-                          handlePlaceBet(
-                            spot
-                          )
-                        }
-                        className="relative flex cursor-pointer items-center justify-center"
-                      >
+      return (
+        <button
+          key={number}
+          type="button"
+          onClick={() => handlePlaceBet(spot)}
+          className="relative z-50 flex cursor-pointer items-center justify-center"
+        >
 
-                        <img
-                          src={
-                            isRed
-                              ? redOvalBtn
-                              : blackOvalBtn
-                          }
-                          alt={spot}
-                          className="h-[70%] w-[70%] object-contain"
-                        />
+          <img
+            src={
+              isRed
+                ? redOvalBtn
+                : blackOvalBtn
+            }
+            alt={spot}
+            className="h-[60%] w-[75%] object-fill"
+          />
 
-                        <span className="absolute text-[clamp(7px,0.75vw,14px)] font-black text-white drop-shadow">
-                          {number}
-                        </span>
+          <span className="absolute text-[28px] font-black text-white drop-shadow">
+            {number}
+          </span>
 
-                        {winningSpot ===
-                          spot && (
-                          <img
-                            src={blinkGif}
-                            alt="blink"
-                            className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-                          />
-                        )}
+          {winningSpot === spot && (
+            <img
+              src={blinkGif}
+              alt="blink"
+              className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+            />
+          )}
 
-                        {renderChipBadge(
-                          spot
-                        )}
+          {renderChipBadge(spot)}
 
-                      </button>
-                    )
-                  })
-                )}
+        </button>
+      )
+    })
+  )}
 
-              </div>
+</div>
+
+              {/* =========================
+    SPLIT BET HIT AREAS
+========================= */}
+
+<div className="absolute left-[8%] top-[1%] h-[65%] w-[84.5%]">
+
+  {/* Between Row 1 and Row 2 */}
+
+  <div className="absolute inset-x-0 z-20 top-[33.33%] flex -translate-y-1/2">
+
+    {[
+      '2-3',
+      '5-6',
+      '8-9',
+      '11-12',
+      '14-15',
+      '17-18',
+      '20-21',
+      '23-24',
+      '26-27',
+      '29-30',
+      '32-33',
+      '35-36',
+    ].map((spot) => (
+      <button
+        key={spot}
+        type="button"
+        onClick={() => handlePlaceBet(spot)}
+        className="relative h-[12px] w-[8.33%] cursor-pointer"
+      >
+        {renderChipBadge(spot)}
+      </button>
+    ))}
+
+  </div>
+
+
+  {/* Between Row 2 and Row 3 */}
+
+  <div className="absolute inset-x-0 z-20 top-[66.66%] flex -translate-y-1/2">
+
+    {[
+      '1-2',
+      '4-5',
+      '7-8',
+      '10-11',
+      '13-14',
+      '16-17',
+      '19-20',
+      '22-23',
+      '25-26',
+      '28-29',
+      '31-32',
+      '34-35',
+    ].map((spot) => (
+      <button
+        key={spot}
+        type="button"
+        onClick={() => handlePlaceBet(spot)}
+        className="relative h-[12px] w-[8.33%] cursor-pointer"
+      >
+        {renderChipBadge(spot)}
+      </button>
+    ))}
+
+  </div>
+
+</div>
+
+{/* =========================
+    BETWEEN COLUMN SPLIT BETS
+========================= */}
+
+<div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
+
+  {[
+    '3-6',
+    '6-9',
+    '9-12',
+    '12-15',
+    '15-18',
+    '18-21',
+    '21-24',
+    '24-27',
+    '27-30',
+    '30-33',
+    '33-36',
+  ].map((spot, index) => (
+    <button
+      key={spot}
+      type="button"
+      onClick={() => handlePlaceBet(spot)}
+      style={{
+        left: `${((index + 1) / 12) * 100}%`,
+      }}
+      className="
+        pointer-events-auto
+        absolute
+        top-[19%]
+        -translate-x-1/2
+        -translate-y-1/2
+        h-[40px]
+        w-[40px]
+        cursor-pointer
+      "
+    >
+      {renderChipBadge(spot)}
+    </button>
+  ))}
+
+</div>
+
+
+{/* =========================
+    4 NUMBER / CORNER BETS
+========================= */}
+
+<div className="absolute left-[7.5%] top-[1%] z-20 h-[65%] w-[85.5%] pointer-events-none">
+
+  {/* =========================
+      ROW 1 + ROW 2
+  ========================= */}
+
+  {[
+    '2-3-5-6',
+    '5-6-8-9',
+    '8-9-11-12',
+    '11-12-14-15',
+    '14-15-17-18',
+    '17-18-20-21',
+    '20-21-23-24',
+    '23-24-26-27',
+    '26-27-29-30',
+    '29-30-32-33',
+    '32-33-35-36',
+  ].map((spot, index) => (
+    <button
+      key={spot}
+      type="button"
+      onClick={() => handlePlaceBet(spot)}
+      style={{
+        left: `${((index + 1) / 12) * 100}%`,
+        top: '33.33%',
+      }}
+      className="
+        pointer-events-auto
+        absolute
+        -translate-x-1/2
+        -translate-y-1/2
+        flex
+        
+        h-[42px]
+        w-[50px]
+        cursor-pointer
+        items-center
+        justify-center
+      "
+    >
+      {renderChipBadge(spot)}
+    </button>
+  ))}
+
+
+  {/* =========================
+      ROW 2 + ROW 3
+  ========================= */}
+
+  {[
+    '1-2-4-5',
+    '4-5-7-8',
+    '7-8-10-11',
+    '10-11-13-14',
+    '13-14-16-17',
+    '16-17-19-20',
+    '19-20-22-23',
+    '22-23-25-26',
+    '25-26-28-29',
+    '28-29-31-32',
+    '31-32-34-35',
+  ].map((spot, index) => (
+    <button
+      key={spot}
+      type="button"
+      onClick={() => handlePlaceBet(spot)}
+      style={{
+        left: `${((index + 1) / 12) * 100}%`,
+        top: '66.66%',
+      }}
+      className="
+        pointer-events-auto
+        absolute
+        -translate-x-1/2
+        -translate-y-1/2
+        flex
+        
+        h-[42px]
+        w-[50px]
+        cursor-pointer
+        items-center
+        justify-center
+      "
+    >
+      {renderChipBadge(spot)}
+    </button>
+  ))}
+
+</div>
+
+
+{/* =========================
+    6 NUMBER / TWO COLUMN BETS
+    BOTTOM OF NUMBER GRID
+========================= */}
+
+<div className="absolute left-[7.5%] top-[1%] z-40 h-[65%] w-[85.5%] pointer-events-none">
+
+  {[
+    '1-2-3-4-5-6',
+    '4-5-6-7-8-9',
+    '7-8-9-10-11-12',
+    '10-11-12-13-14-15',
+    '13-14-15-16-17-18',
+    '16-17-18-19-20-21',
+    '19-20-21-22-23-24',
+    '22-23-24-25-26-27',
+    '25-26-27-28-29-30',
+    '28-29-30-31-32-33',
+    '31-32-33-34-35-36',
+  ].map((spot, index) => (
+    <button
+      key={spot}
+      type="button"
+      onClick={() => handlePlaceBet(spot)}
+      style={{
+        left: `${((index + 1) / 12) * 100}%`,
+      }}
+      className="
+        pointer-events-auto
+        absolute
+        bottom-0
+        -translate-x-1/2
+        translate-y-1/2
+        flex
+        h-[44px]
+        w-[50px]
+        cursor-pointer
+        items-center
+        justify-center
+      "
+    >
+      {renderChipBadge(spot)}
+    </button>
+  ))}
+
+</div>
+
+
+{/* =========================
+    3 NUMBER / STREET BETS
+    BOTTOM OF EACH COLUMN
+========================= */}
+
+<div className="absolute left-[8%] top-[1%] z-40 h-[65%] w-[84.5%] pointer-events-none">
+
+  {[
+    '1-2-3',
+    '4-5-6',
+    '7-8-9',
+    '10-11-12',
+    '13-14-15',
+    '16-17-18',
+    '19-20-21',
+    '22-23-24',
+    '25-26-27',
+    '28-29-30',
+    '31-32-33',
+    '34-35-36',
+  ].map((spot, index) => (
+    <button
+      key={spot}
+      type="button"
+      onClick={() => handlePlaceBet(spot)}
+      style={{
+        left: `${((index + 0.5) / 12) * 100}%`,
+      }}
+      className="
+        pointer-events-auto
+        absolute
+        bottom-0
+        -translate-x-1/2
+        translate-y-1/2
+        flex
+        h-[27px]
+        w-[34px]
+        cursor-pointer
+        items-center
+        justify-center
+      "
+    >
+      {renderChipBadge(spot)}
+    </button>
+  ))}
+
+</div>
 
               {/* 2 TO 1 */}
 
-              <div className="absolute right-[0.8%] top-[1%] grid h-[61%] w-[6.4%] grid-rows-3">
+              <div className="absolute right-[0.8%] top-[1%] grid h-[65%] w-[6.4%] grid-rows-3">
 
                 {[
                   'ROW_1',
@@ -699,7 +1133,7 @@ export default function FunRoulette() {
                     className="relative flex cursor-pointer items-center justify-center"
                   >
 
-                    <span className="text-[clamp(6px,0.68vw,12px)] font-extrabold tracking-widest text-white [writing-mode:vertical-rl] rotate-180 drop-shadow">
+                    <span className="text-[20px] font-extrabold tracking-widest text-white [writing-mode:vertical-rl] drop-shadow">
                       2 to 1
                     </span>
 
@@ -712,7 +1146,7 @@ export default function FunRoulette() {
 
               {/* 12 SECTIONS */}
 
-              <div className="absolute left-[8%] top-[63%] grid h-[17%] w-[84%] grid-cols-3">
+              <div className="absolute left-[8%] top-[65%] grid h-[17%] w-[84%] grid-cols-3">
 
                 {[
                   ['1ST12', '1st 12'],
@@ -731,7 +1165,7 @@ export default function FunRoulette() {
                       className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                     >
 
-                      <span className="text-[clamp(8px,1.25vw,26px)] font-serif font-black leading-none tracking-wider text-[#3bfb22] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                      <span className="text-[40px] font-serif font-black leading-none tracking-wider text-[#3bfb22] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
                         {label}
                       </span>
 
@@ -747,7 +1181,7 @@ export default function FunRoulette() {
 
               {/* OUTSIDE BETS */}
 
-              <div className="absolute left-[11.9%] top-[82%] grid h-[15%] w-[77.2%] grid-cols-6">
+              <div className="absolute left-[11.9%] top-[84%] grid h-[15%] w-[77.2%] grid-cols-6">
 
                 <button
                   type="button"
@@ -759,7 +1193,7 @@ export default function FunRoulette() {
                   className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                 >
 
-                  <span className="text-[clamp(7px,1vw,21px)] font-black leading-none tracking-wide text-white drop-shadow">
+                  <span className="text-[35px] font-black leading-none tracking-wide text-white drop-shadow">
                     1 to 18
                   </span>
 
@@ -779,7 +1213,7 @@ export default function FunRoulette() {
                   className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                 >
 
-                  <span className="text-[clamp(7px,1vw,21px)] font-black leading-none text-white drop-shadow">
+                  <span className="text-[35px] font-black leading-none text-white drop-shadow">
                     Even
                   </span>
 
@@ -802,7 +1236,7 @@ export default function FunRoulette() {
                   <img
                     src={redDiamondImg}
                     alt="Red"
-                    className="h-full w-[88%] object-fill drop-shadow"
+                    className="h-full w-[98%] object-fill drop-shadow"
                   />
 
                   {renderChipBadge(
@@ -824,7 +1258,7 @@ export default function FunRoulette() {
                   <img
                     src={blackDiamondImg}
                     alt="Black"
-                    className="h-full w-[78%] object-fill drop-shadow"
+                    className="h-full w-[98%] object-fill drop-shadow mr-6"
                   />
 
                   {renderChipBadge(
@@ -843,7 +1277,7 @@ export default function FunRoulette() {
                   className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                 >
 
-                  <span className="text-[clamp(7px,1vw,21px)] font-black leading-none tracking-wide text-white drop-shadow">
+                  <span className="text-[35px] font-black leading-none tracking-wide text-white drop-shadow">
                     Odd
                   </span>
 
@@ -863,7 +1297,7 @@ export default function FunRoulette() {
                   className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                 >
 
-                  <span className="whitespace-nowrap text-[clamp(7px,0.95vw,20px)] font-black leading-none tracking-wide text-white drop-shadow">
+                  <span className="whitespace-nowrap text-[35px] font-black leading-none tracking-wide text-white drop-shadow">
                     19 to 36
                   </span>
 
@@ -910,7 +1344,7 @@ export default function FunRoulette() {
                 className="h-[70%] w-full object-fill"
               />
 
-              <span className="absolute whitespace-nowrap text-[10px] md:text-[18px] font-bold text-white drop-shadow sm:ml-2 sm:top-3 md:top-6">
+              <span className="absolute whitespace-nowrap text-[21px] mt-2 font-bold text-white drop-shadow ml-4 sm:top-3 md:top-6">
                 Total Bet: {totalBet}
               </span>
 
@@ -920,7 +1354,7 @@ export default function FunRoulette() {
 
           {/* STATUS */}
 
-          <div className="relative flex h-[80%] w-[70%] min-w-0 items-center justify-center">
+          <div className="relative flex h-[85%] w-[70%] min-w-0 items-center justify-center">
 
             <img
               src={extraLower}
@@ -928,7 +1362,7 @@ export default function FunRoulette() {
               className="h-full w-full object-fill"
             />
 
-            <span className="absolute left-[3%] right-[3%] top-1/2 -translate-y-1/2 truncate text-center text-[clamp(7px,0.68vw,13px)] font-bold tracking-wide text-[#3bfb22] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            <span className="absolute left-[3%] right-[3%] top-1/2 -translate-y-1/2 truncate text-center text-[17px] font-bold tracking-wide text-[#3bfb22] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               {statusMessage}
             </span>
 
@@ -936,7 +1370,7 @@ export default function FunRoulette() {
 
           {/* LEAVE */}
 
-          <div className="flex w-[18%] min-w-0 items-center justify-end mb-2">
+          <div className="flex w-[20%] min-w-0 items-center justify-end mb-2">
 
             <button
               type="button"
@@ -952,7 +1386,7 @@ export default function FunRoulette() {
                 className="h-auto w-full object-fill"
               />
 
-              <span className="absolute whitespace-nowrap text-[clamp(7px,0.68vw,12px)] font-bold text-white drop-shadow">
+              <span className="absolute whitespace-nowrap text-[20px] font-bold text-white drop-shadow">
                 Leave Table
               </span>
 

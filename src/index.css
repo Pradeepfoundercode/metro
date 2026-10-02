@@ -10,6 +10,11 @@
   --color-deposit: #17b153;
 }
 
+
+/* =========================================================
+   BASE
+========================================================= */
+
 @layer base {
   *,
   *::before,
@@ -26,8 +31,11 @@
     height: 100%;
     margin: 0;
     padding: 0;
+
     overflow: hidden;
+
     background: #000;
+
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
@@ -42,7 +50,9 @@
   body {
     min-width: 0;
     min-height: 0;
+
     overflow: hidden;
+
     background: #000;
   }
 
@@ -58,10 +68,10 @@
   }
 
   img {
-    max-width: 100%;
     -webkit-user-drag: none;
   }
 }
+
 
 /* =========================================================
    LANDSCAPE ORIENTATION
@@ -76,6 +86,7 @@
   height: 100%;
 }
 
+
 /* =========================================================
    PORTRAIT DEVICE
 ========================================================= */
@@ -88,6 +99,7 @@
   .landscape-required {
     position: fixed;
     inset: 0;
+
     z-index: 999999;
 
     display: flex;
@@ -226,6 +238,7 @@
   }
 }
 
+
 /* =========================================================
    GAME VIEWPORT
 ========================================================= */
@@ -239,14 +252,30 @@
 
   overflow: hidden;
 
-  background: #001b09;
+  background: #000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  isolation: isolate;
 }
+
 
 /* =========================================================
    GAME STAGE
-   Reference design ratio:
+
+   ORIGINAL DESIGN SIZE
    1920 x 912
-   ========================================================= */
+
+   IMPORTANT:
+   Everything inside this stage keeps the exact same
+   position and proportion.
+
+   Smaller landscape screen:
+   complete stage gets uniformly scaled.
+
+========================================================= */
 
 .game-stage {
   position: absolute;
@@ -254,33 +283,60 @@
   left: 50%;
   top: 50%;
 
-  width: max(100vw, 210.5263dvh);
-  height: max(100dvh, 47.5vw);
+  width: 1920px;
+  height: 912px;
 
-  transform: translate(-50%, -50%);
+  transform:
+    translate(-50%, -50%)
+    scale(
+      min(
+        calc(100vw / 1920px),
+        calc(100dvh / 912px)
+      )
+    );
+
+  transform-origin: center center;
 
   overflow: hidden;
 
   background: #001b09;
+
+  flex-shrink: 0;
 }
+
 
 /* =========================================================
-   FULLSCREEN GAME SAFETY
+   LANDSCAPE
 ========================================================= */
 
-:fullscreen {
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
-  background: #000;
+@media screen and (orientation: landscape) {
+  .game-viewport {
+    width: 100vw;
+    height: 100dvh;
+
+    overflow: hidden;
+  }
+
+  .game-stage {
+    width: 1920px;
+    height: 912px;
+
+    left: 50%;
+    top: 50%;
+
+    transform:
+      translate(-50%, -50%)
+      scale(
+        min(
+          calc(100vw / 1920px),
+          calc(100dvh / 912px)
+        )
+      );
+
+    transform-origin: center center;
+  }
 }
 
-:-webkit-full-screen {
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
-  background: #000;
-}
 
 /* =========================================================
    SMALL LANDSCAPE PHONES
@@ -290,29 +346,71 @@
   .game-viewport {
     width: 100vw;
     height: 100dvh;
+
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .game-stage {
-    width: max(100vw, 210.5263dvh);
-    height: max(100dvh, 47.5vw);
+    width: 1920px;
+    height: 912px;
+
+    left: 50%;
+    top: 50%;
+
+    transform:
+      translate(-50%, -50%)
+      scale(
+        min(
+          calc(100vw / 1920px),
+          calc(100dvh / 912px)
+        )
+      );
+
+    transform-origin: center center;
   }
 }
 
+
 /* =========================================================
-   TABLETS
+   TABLETS LANDSCAPE
 ========================================================= */
 
 @media screen and (min-width: 901px) and (max-width: 1400px) and (orientation: landscape) {
   .game-viewport {
     width: 100vw;
     height: 100dvh;
+
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .game-stage {
-    width: max(100vw, 210.5263dvh);
-    height: max(100dvh, 47.5vw);
+    width: 1920px;
+    height: 912px;
+
+    left: 50%;
+    top: 50%;
+
+    transform:
+      translate(-50%, -50%)
+      scale(
+        min(
+          calc(100vw / 1920px),
+          calc(100dvh / 912px)
+        )
+      );
+
+    transform-origin: center center;
   }
 }
+
 
 /* =========================================================
    DESKTOP / LARGE SCREEN
@@ -322,13 +420,68 @@
   .game-viewport {
     width: 100vw;
     height: 100dvh;
+
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .game-stage {
-    width: max(100vw, 210.5263dvh);
-    height: max(100dvh, 47.5vw);
+    width: 1920px;
+    height: 912px;
+
+    left: 50%;
+    top: 50%;
+
+    transform:
+      translate(-50%, -50%)
+      scale(
+        min(
+          calc(100vw / 1920px),
+          calc(100dvh / 912px)
+        )
+      );
+
+    transform-origin: center center;
   }
 }
+
+
+/* =========================================================
+   PORTRAIT
+========================================================= */
+
+@media screen and (orientation: portrait) {
+  .game-stage {
+    display: none;
+  }
+}
+
+
+/* =========================================================
+   FULLSCREEN
+========================================================= */
+
+:fullscreen {
+  width: 100vw;
+  height: 100dvh;
+
+  overflow: hidden;
+
+  background: #000;
+}
+
+:-webkit-full-screen {
+  width: 100vw;
+  height: 100dvh;
+
+  overflow: hidden;
+
+  background: #000;
+}
+
 
 /* =========================================================
    SAFE AREA
@@ -344,15 +497,6 @@
   }
 }
 
-/* =========================================================
-   PREVENT SCROLL / OVERSCROLL
-========================================================= */
-
-html,
-body {
-  overscroll-behavior: none;
-  touch-action: manipulation;
-}
 
 /* =========================================================
    GAME BUTTONS
@@ -360,12 +504,37 @@ body {
 
 .game-stage button {
   -webkit-tap-highlight-color: transparent;
+
   touch-action: manipulation;
+
+  outline: none;
 }
 
 .game-stage button:focus {
   outline: none;
 }
+
+
+/* =========================================================
+   GAME IMAGES
+========================================================= */
+
+.game-stage img {
+  -webkit-user-drag: none;
+}
+
+
+/* =========================================================
+   PREVENT SCROLL / OVERSCROLL
+========================================================= */
+
+html,
+body {
+  overscroll-behavior: none;
+
+  touch-action: manipulation;
+}
+
 
 /* =========================================================
    HIDE SCROLLBARS
@@ -378,4 +547,11 @@ body {
 
 * {
   scrollbar-width: none;
+}
+
+.selected-chip-glow {
+  filter:
+    drop-shadow(0 0 2px var(--chip-glow))
+    drop-shadow(0 0 6px var(--chip-glow))
+    drop-shadow(0 0 9px var(--chip-glow));
 }
