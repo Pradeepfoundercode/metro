@@ -10,9 +10,12 @@ import cancelBtn from '../../assets/button/cancel.png'
 
 import { useAuth } from '../../hooks/useAuth'
 import { useUserProfile } from '../../hooks/useUserProfile'
+import { useFullscreenLandscape } from '../../hooks/useFullscreen'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const { enterFullscreen } =
+  useFullscreenLandscape()
 
   const {
     user,
@@ -37,55 +40,19 @@ export default function DashboardPage() {
   ])
 
   const handleLogout = async () => {
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen()
-      }
-    } catch {}
+  logout()
 
-    logout()
+  navigate('/login', {
+    replace: true,
+  })
+}
+  
 
-    navigate('/login', {
-      replace: true,
-    })
-  }
+ const handleFunRoulette = async () => {
+  await enterFullscreen()
 
-  const enterGameFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen({
-          navigationUI: 'hide',
-        })
-      }
-    } catch (error) {
-      console.log(
-        'Fullscreen request was blocked:',
-        error
-      )
-    }
-
-    try {
-      if (
-        screen.orientation &&
-        screen.orientation.lock
-      ) {
-        await screen.orientation.lock(
-          'landscape'
-        )
-      }
-    } catch (error) {
-      console.log(
-        'Landscape lock not supported:',
-        error
-      )
-    }
-  }
-
-  const handleFunRoulette = async () => {
-    await enterGameFullscreen()
-
-    navigate('/fun-roulette')
-  }
+  navigate('/fun-roulette')
+}
 
   const balance = Number(
     user?.wallet ?? 0

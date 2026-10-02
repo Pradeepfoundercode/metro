@@ -93,55 +93,109 @@ export default function SplashPage() {
     return () => {
       clearTimeout(timer)
     }
-  }, [progress, isAuthenticated, navigate])
+  }, [
+    progress,
+    isAuthenticated,
+    navigate,
+  ])
 
   return (
-    <div className="relative flex h-screen w-screen items-center justify-center overflow-hidden bg-[#001742] select-none">
-      <img
-        src={splashBg}
-        alt="Metro Casino Splash"
-        className="pointer-events-none h-full w-full object-fill"
-      />
+    <>
+      {/* =========================================
+          PORTRAIT
+      ========================================= */}
+      <div className="landscape-required">
+        <div className="orientation-content">
+          <div className="orientation-icon">
+            <div className="phone-icon" />
+          </div>
 
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/20" />
+          <h1>Please Rotate Your Device</h1>
 
-      <div className="absolute bottom-[4%] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center sm:bottom-[5%]">
-        <div className="relative mb-2 flex h-7 w-7 items-center justify-center sm:h-8 sm:w-8">
-          <svg
-            className="-rotate-90 h-full w-full"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="#fbbf24"
-              strokeWidth="2.5"
-              className="opacity-20"
-            />
+          <p>
+            This game is designed for landscape mode.
+            Please rotate your device to continue.
+          </p>
 
-            <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="#fbbf24"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeDasharray="56.55"
-              strokeDashoffset={
-                56.55 -
-                (progress / 100) * 56.55
-              }
-              className="transition-all duration-150 ease-out"
-            />
-          </svg>
+          <div className="rotate-message">
+            <span className="screen-icon">
+              ↻
+            </span>
+
+            <span>
+              Rotate your device to landscape
+            </span>
+          </div>
         </div>
-
-        <p className="whitespace-nowrap text-center text-[10px] font-medium tracking-wide text-white sm:text-xs">
-  Loading assets... {progress}%
-</p>
       </div>
-    </div>
+
+      {/* =========================================
+          SPLASH
+      ========================================= */}
+      <div className="game-viewport select-none">
+        <div className="game-stage">
+
+          {/* BACKGROUND */}
+          <img
+            src={splashBg}
+            alt="Metro Casino Splash"
+            className="pointer-events-none absolute inset-0 z-0 h-full w-full object-fill"
+          />
+
+          {/* OVERLAY */}
+          <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/25 via-transparent to-black/20" />
+
+          {/* =====================================
+              LOADING
+          ===================================== */}
+          <div className="absolute bottom-[4%] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center">
+
+            {/* PROGRESS CIRCLE */}
+            <div className="relative mb-2 flex h-[32px] w-[32px] items-center justify-center">
+
+              <svg
+                className="-rotate-90 h-full w-full"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                {/* BACKGROUND CIRCLE */}
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="#fbbf24"
+                  strokeWidth="2.5"
+                  className="opacity-20"
+                />
+
+                {/* PROGRESS CIRCLE */}
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="#fbbf24"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeDasharray="56.55"
+                  strokeDashoffset={
+                    56.55 -
+                    (progress / 100) * 56.55
+                  }
+                  className="transition-all duration-150 ease-out"
+                />
+              </svg>
+
+            </div>
+
+            {/* LOADING TEXT */}
+            <p className="whitespace-nowrap text-center text-[12px] font-medium tracking-wide text-white">
+              Loading assets... {progress}%
+            </p>
+
+          </div>
+
+        </div>
+      </div>
+    </>
   )
 }
