@@ -72,6 +72,7 @@ export default function FunTarget() {
   const { user, userId } = useAuth()
   const { wallet, deductWallet, addWallet, setWallet } = useWalletStore()
 
+  const timerEndRef = useRef(null)
   const [timeLeft, setTimeLeft] = useState(10)
   const [isSpinning, setIsSpinning] = useState(false)
   const [winnerNumber, setWinnerNumber] = useState(0)
@@ -188,29 +189,37 @@ export default function FunTarget() {
       })
 
       setIsBetAccepted(false)
-      setTimeLeft(10)
+timerEndRef.current = Date.now() + 10000
+setTimeLeft(10)
     }, 5000)
   }
 
-  useEffect(() => {
-    if (isSpinning) return
+ useEffect(() => {
+  if (isSpinning) return
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          triggerSpin()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
+  if (!timerEndRef.current) {
+    timerEndRef.current = Date.now() + 10000
+  }
 
-    return () => {
+  const timer = setInterval(() => {
+    const remaining = Math.max(
+      0,
+      Math.ceil((timerEndRef.current - Date.now()) / 1000)
+    )
+
+    setTimeLeft(remaining)
+
+    if (remaining <= 0) {
       clearInterval(timer)
-      if (spinTimeoutRef.current) clearTimeout(spinTimeoutRef.current)
+      timerEndRef.current = null
+      triggerSpin()
     }
-  }, [isSpinning])
+  }, 250)
+
+  return () => {
+    clearInterval(timer)
+  }
+}, [isSpinning])
 
   return (
     <div className="game-viewport select-none font-sans">
