@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useWalletStore } from '../../store/useWalletStore'
 import { placeFunTargetBet } from '../../services/funtarget.services'
 import GameHistoryPopup from '../../components/ui/GameHistoryPopup'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 
 import homeBgFun from '../../assets/fun_target/home_bg_fun.png'
 import scoreWord from '../../assets/fun_target/score_word.png'
@@ -82,6 +83,7 @@ export default function FunTarget() {
   const [isSubmittingBet, setIsSubmittingBet] = useState(false)
   const [isBetAccepted, setIsBetAccepted] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
 
   const [bets, setBets] = useState({})
   const totalBet = Object.values(bets).reduce((sum, val) => sum + val, 0)
@@ -555,12 +557,7 @@ setTimeLeft(10)
 
           <button
             type="button"
-            onClick={() => {
-              if (!isBetAccepted && totalBet > 0) {
-                addWallet(totalBet)
-              }
-              navigate('/dashboard')
-            }}
+            onClick={() => setIsLeaveModalOpen(true)}
             className="relative flex h-[42px] w-[185px] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
           >
             <img
@@ -583,6 +580,23 @@ setTimeLeft(10)
           userName={user?.username || localStorage.getItem('username') || 'PRADEEP'}
           balance={wallet || 0}
           historyData={STATIC_FUN_TARGET_HISTORY}
+        />
+
+        <ConfirmDialog
+          isOpen={isLeaveModalOpen}
+          onClose={() => setIsLeaveModalOpen(false)}
+          onConfirm={() => {
+            setIsLeaveModalOpen(false)
+            if (!isBetAccepted && totalBet > 0) {
+              addWallet(totalBet)
+            }
+            navigate('/dashboard')
+          }}
+          message={
+            <>
+              Are you sure you want to<br />go to Lobby?
+            </>
+          }
         />
       </div>
     </div>

@@ -244,6 +244,50 @@
 
 
 /* =========================================================
+   FORCED LANDSCAPE MODE (When auto-rotate is OFF on mobile)
+========================================================= */
+
+.forced-landscape-hidden {
+  display: none !important;
+}
+
+.landscape-app.forced-landscape-mode {
+  display: block !important;
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: 100dvh !important;
+  height: 100dvw !important;
+  transform: translate(-50%, -50%) rotate(90deg) !important;
+  transform-origin: center center !important;
+  overflow: hidden !important;
+  z-index: 99999 !important;
+}
+
+.forced-landscape-mode .game-viewport {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.forced-landscape-mode .game-stage {
+  transform:
+    translate(-50%, -50%)
+    scale(
+      min(
+        calc(100dvh / 1920px),
+        calc(100dvw / 912px)
+      )
+    ) !important;
+}
+
+.forced-landscape-mode .h-dvh {
+  height: 100% !important;
+}
+
+
+/* =========================================================
    GAME VIEWPORT
 ========================================================= */
 

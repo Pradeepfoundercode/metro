@@ -58,31 +58,7 @@ export default function Login() {
 }
 
   return (
-    <>
-      {/* PORTRAIT */}
-      <div className="landscape-required">
-        <div className="orientation-content">
-          <div className="orientation-icon">
-            <div className="phone-icon" />
-          </div>
-
-          <h1>Please Rotate Your Device</h1>
-
-          <p>
-            This game is designed for landscape mode. Please rotate your device
-            to continue.
-          </p>
-
-          <div className="rotate-message">
-            <span className="screen-icon">↻</span>
-
-            <span>Rotate your device to landscape</span>
-          </div>
-        </div>
-      </div>
-
-      {/* LOGIN FULL SCREEN */}
-      <button onClick={enterFullscreen} className="game-viewport">
+    <button onClick={enterFullscreen} className="game-viewport">
         <div className="game-stage">
           {/* BACKGROUND */}
           <img
@@ -281,6 +257,5 @@ export default function Login() {
           </div>
         </div>
       </button>
-    </>
   );
 }

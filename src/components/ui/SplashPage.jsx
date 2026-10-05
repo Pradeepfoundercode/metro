@@ -100,39 +100,7 @@ export default function SplashPage() {
   ])
 
   return (
-    <>
-      {/* =========================================
-          PORTRAIT
-      ========================================= */}
-      <div className="landscape-required">
-        <div className="orientation-content">
-          <div className="orientation-icon">
-            <div className="phone-icon" />
-          </div>
-
-          <h1>Please Rotate Your Device</h1>
-
-          <p>
-            This game is designed for landscape mode.
-            Please rotate your device to continue.
-          </p>
-
-          <div className="rotate-message">
-            <span className="screen-icon">
-              ↻
-            </span>
-
-            <span>
-              Rotate your device to landscape
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* =========================================
-          SPLASH
-      ========================================= */}
-      <div className="game-viewport select-none">
+    <div className="game-viewport select-none">
         <div className="game-stage">
 
           {/* BACKGROUND */}
@@ -196,6 +164,5 @@ export default function SplashPage() {
 
         </div>
       </div>
-    </>
   )
 }
