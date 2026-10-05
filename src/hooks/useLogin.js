@@ -22,6 +22,7 @@ export const useLogin = () => {
       login({
         id: response.id,
         username: variables.username,
+        password: variables.password,
         device_id: response.device_id,
       })
 

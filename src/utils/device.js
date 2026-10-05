@@ -1,15 +1,11 @@
-const DEVICE_KEY = 'device_id'
+let memoryDeviceId = null
 
 export const getDeviceId = () => {
-  let deviceId = localStorage.getItem(DEVICE_KEY)
-
-  if (!deviceId) {
-    deviceId = `WEB_CHROME_${Math.random()
+  if (!memoryDeviceId) {
+    memoryDeviceId = `WEB_CHROME_${Math.random()
       .toString(36)
       .substring(2, 10)}`
-
-    localStorage.setItem(DEVICE_KEY, deviceId)
   }
 
-  return deviceId
+  return memoryDeviceId
 }

@@ -32,15 +32,17 @@ export const getUserProfile = async (userId) => {
       setTimeout(resolve, 300)
     })
 
+    const currentUsername = localStorage.getItem('username') || 'pradeep'
+
     return {
       success: true,
       message: 'User found..!',
       data: {
         id: userId,
-        username: 'PLAYER',
-        name: 'demo',
+        username: currentUsername,
+        name: currentUsername,
         mobile: '0987654321',
-        email: 'player@gmail.com',
+        email: `${currentUsername}@gmail.com`,
         wallet: 8486,
         status: 1,
       },

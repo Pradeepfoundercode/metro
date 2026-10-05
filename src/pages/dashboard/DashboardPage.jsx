@@ -9,54 +9,32 @@ import funTargetImg from '../../assets/2.png'
 import cancelBtn from '../../assets/button/cancel.png'
 
 import { useAuth } from '../../hooks/useAuth'
-import { useUserProfile } from '../../hooks/useUserProfile'
+import { useWalletStore } from '../../store/useWalletStore'
 import { useFullscreenLandscape } from '../../hooks/useFullscreen'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const { enterFullscreen } =
-  useFullscreenLandscape()
+  const { enterFullscreen } = useFullscreenLandscape()
 
-  const {
-    user,
-    updateProfile,
-    logout,
-  } = useAuth()
-
-  const {
-    data: profileResponse,
-  } = useUserProfile()
-
-  useEffect(() => {
-    if (
-      profileResponse?.success &&
-      profileResponse?.data
-    ) {
-      updateProfile(profileResponse.data)
-    }
-  }, [
-    profileResponse,
-    updateProfile,
-  ])
+  const { user, logout } = useAuth()
+  const { wallet } = useWalletStore()
 
   const handleLogout = async () => {
-  logout()
+    logout()
+    navigate('/login', {
+      replace: true,
+    })
+  }
 
-  navigate('/login', {
-    replace: true,
-  })
-}
-  
+  const handleFunRoulette = async () => {
+    await enterFullscreen()
+    navigate('/fun-roulette')
+  }
 
- const handleFunRoulette = async () => {
-  await enterFullscreen()
-
-  navigate('/fun-roulette')
-}
-
-  const balance = Number(
-    user?.wallet ?? 0
-  )
+  const handleRouletteMiniTimer = async () => {
+    await enterFullscreen()
+    navigate("/roulette-mini-timer")
+  }
 
   return (
     <div className="relative h-dvh w-full overflow-hidden select-none bg-[#001338] font-sans">
@@ -168,7 +146,7 @@ export default function DashboardPage() {
   <div className="flex h-[clamp(21px,2.2vw,32px)] w-[clamp(90px,13vw,190px)] min-w-0 items-center justify-center rounded-[5px] border border-[#1a4a93] bg-[#00235d] px-2 sm:rounded-lg sm:px-3">
 
     <span className="max-w-full truncate text-[clamp(9px,1vw,16px)] font-bold tracking-widest text-white">
-      {balance.toFixed(2)}
+      {Number(wallet).toFixed(2)}
     </span>
 
   </div>
@@ -200,20 +178,21 @@ export default function DashboardPage() {
             />
 
           </button>
-
-          {/* =====================================
-              MINI TIMER
-          ===================================== */}
-
-          <div className="flex h-[84%] min-w-0 flex-1 items-center justify-center">
+          <button
+            type="button"
+            onClick={handleRouletteMiniTimer}
+            className="group flex h-[84%] min-w-0 flex-1 cursor-pointer items-center justify-center border-0 bg-transparent p-0 outline-none transition-transform duration-200 hover:scale-[1.025] active:scale-[0.98]"
+          >
 
             <img
               src={miniTimerImg}
               alt="Roulette Mini Timer"
-              className="h-full w-full object-contain drop-shadow-[0_12px_25px_rgba(0,0,0,0.88)]"
+              className="h-full w-full object-contain "
             />
 
-          </div>
+          </button>
+
+         
 
           {/* =====================================
               FUN TARGET

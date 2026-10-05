@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
-import { useMutation } from '@tanstack/react-query'
+import { useWalletStore } from '../../store/useWalletStore'
 import toast from 'react-hot-toast'
 
 
@@ -48,7 +48,7 @@ import {
   ROW_3,
 } from '../../constants/funRouletteData'
 import { placeFunRouletteBet } from '../../services/funroulette.services'
-import { getGameId } from '../../utils/helper'
+import { getGameId, createBetPayload } from '../../utils/helper'
 
 
 const MIN_10_BET_SPOTS = [
@@ -82,11 +82,9 @@ export default function FunRoulette() {
 
   const [showGreaterThan10, setShowGreaterThan10] = useState(false)
   const navigate = useNavigate()
-  const { user, updateProfile } = useAuth()
-
-  const [balance, setBalance] = useState(() =>
-    Number(user?.wallet ?? 0)
-  )
+  const { user } = useAuth()
+  const { wallet, deductWallet, addWallet } = useWalletStore()
+  const balance = wallet
 
   const [selectedChip, setSelectedChip] = useState(1)
   const [bets, setBets] = useState({})
@@ -122,12 +120,6 @@ export default function FunRoulette() {
     0
   )
 
-  useEffect(() => {
-    if (user?.wallet !== undefined) {
-      setBalance(Number(user.wallet))
-    }
-  }, [user?.wallet])
-
  const handlePlaceBet = (spot) => {
   if (isLocked || !selectedChip) {
     return
@@ -150,19 +142,11 @@ export default function FunRoulette() {
   setShowWaitToComplete(false)
 
   // Balance insufficient => bet nahi lagega
-  if (balance < selectedChip) {
+  if (wallet < selectedChip) {
     return
   }
 
-  setBalance((prev) => {
-    const nextBalance = prev - selectedChip
-
-    updateProfile({
-      wallet: nextBalance,
-    })
-
-    return nextBalance
-  })
+  deductWallet(selectedChip)
 
   setBets((prev) => ({
     ...prev,
@@ -199,16 +183,7 @@ export default function FunRoulette() {
     prev.slice(0, -1)
   )
 
-  setBalance((prev) => {
-    const nextBalance =
-      prev + lastBet.amount
-
-    updateProfile({
-      wallet: nextBalance,
-    })
-
-    return nextBalance
-  })
+  addWallet(lastBet.amount)
 
   setBets((prev) => {
     const currentAmount =
@@ -256,16 +231,7 @@ export default function FunRoulette() {
   setBetHistory([])
   setBets({})
 
-  setBalance((prev) => {
-    const nextBalance =
-      prev + refundAmount
-
-    updateProfile({
-      wallet: nextBalance,
-    })
-
-    return nextBalance
-  })
+  addWallet(refundAmount)
 
   // setStatusMessage(
   //   `All bets cancelled: ${refundAmount} refunded`
@@ -273,23 +239,15 @@ export default function FunRoulette() {
 }
 
   const handleBetOk = () => {
-  if (betHistory.length === 0) {
-    return
+    const payload = createBetPayload(betHistory, user, '450538')
+    if (!payload) return
+
+    console.log(payload, " payload")
+    console.log('Bets Payload:', payload)
+    toast.success('Bet Placed Successfully')
   }
 
-  const betsPayload = betHistory.map((bet) => ({
-    game_id: getGameId(bet.spot),
-    amount: bet.amount,
-  }))
 
-  const payload = {
-    user_id: '156',
-    games_no: '450538',
-    bets: betsPayload,
-  }
-
-  placeBetMutation.mutate(payload)
-}
 
   const getChipAsset = (amount) => {
     if (amount >= 5000) {
@@ -361,6 +319,7 @@ export default function FunRoulette() {
           if (!isPopupOpenRef.current) {
             // Normal countdown reached 0 -> Open popup & start 10s countdown
             setIsPopupOpen(true)
+            setBets({})
             return 10
           } else {
             // Popup 10s countdown reached 0 -> Close popup & resume from base round time
@@ -385,20 +344,7 @@ export default function FunRoulette() {
 
 
 
-const placeBetMutation = useMutation({
-  mutationFn: placeFunRouletteBet,
 
-  onSuccess: (data) => {
-    // setStatusMessage('Bet placed successfully')
-    setIsLocked(true)
-  },
-
-  onError: (error) => {
-    setStatusMessage(
-      error?.response?.data?.message || 'Something went wrong'
-    )
-  },
-})
 
   return (
     <div className="game-viewport select-none">
@@ -432,7 +378,7 @@ const placeBetMutation = useMutation({
               <div className="absolute bottom-[20%] left-0 right-0 flex items-center justify-center">
 
                 <span className="text-[20px] font-bold tracking-wide text-white">
-                  {balance.toFixed(2)}
+                  {Number(wallet).toFixed(2)}
                 </span>
 
               </div>
@@ -1045,10 +991,7 @@ const placeBetMutation = useMutation({
 </div>
 
 
-{/* =========================
-    6 NUMBER / TWO COLUMN BETS
-    BOTTOM OF NUMBER GRID
-========================= */}
+
 
 <div className="absolute left-[7.5%] top-[1%] z-40 h-[65%] w-[85.5%] pointer-events-none">
 
@@ -1528,7 +1471,7 @@ const placeBetMutation = useMutation({
         <GameHistoryPopup
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}
-          userName={user?.name || user?.username || 'PRADEEP'}
+          userName={user?.username || 'PLAYER'}
           balance={balance}
         />
 

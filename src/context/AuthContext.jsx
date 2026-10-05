@@ -2,22 +2,19 @@ import React, { createContext, useCallback, useState } from 'react'
 
 export const AuthContext = createContext(null)
 
-const USER_KEY = 'user'
-const USER_ID_KEY = 'userId'
-
 const getStoredUser = () => {
   try {
-    const savedUser = localStorage.getItem(USER_KEY)
+    const username = localStorage.getItem('username')
+    const password = localStorage.getItem('password')
 
-    if (!savedUser) {
-      return null
+    if (!username) return null
+
+    return {
+      id: 155,
+      username,
+      password,
     }
-
-    return JSON.parse(savedUser)
   } catch {
-    localStorage.removeItem(USER_KEY)
-    localStorage.removeItem(USER_ID_KEY)
-
     return null
   }
 }
@@ -26,47 +23,27 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(getStoredUser)
 
   const login = useCallback((userData) => {
-    const updatedUser = {
-      ...userData,
-    }
+    setUser(userData)
 
-    setUser(updatedUser)
-
-    localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
-
-    if (updatedUser?.id) {
-      localStorage.setItem(USER_ID_KEY, String(updatedUser.id))
-    }
+    if (userData?.username) localStorage.setItem('username', userData.username)
+    if (userData?.password) localStorage.setItem('password', userData.password)
   }, [])
 
   const updateProfile = useCallback((profileData) => {
-    setUser((currentUser) => {
-      const updatedUser = {
-        ...currentUser,
-        ...profileData,
-      }
-
-      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
-
-      if (updatedUser?.id) {
-        localStorage.setItem(USER_ID_KEY, String(updatedUser.id))
-      }
-
-      return updatedUser
-    })
+    setUser((currentUser) => ({
+      ...currentUser,
+      ...profileData,
+    }))
   }, [])
 
   const logout = useCallback(() => {
     setUser(null)
-
-    localStorage.removeItem(USER_KEY)
-    localStorage.removeItem(USER_ID_KEY)
+    localStorage.removeItem('username')
+    localStorage.removeItem('password')
   }, [])
 
-  const userId =
-    user?.id || localStorage.getItem(USER_ID_KEY)
-
-  const isAuthenticated = Boolean(userId)
+  const userId = user?.id || (user?.username ? 155 : null)
+  const isAuthenticated = Boolean(user?.username)
 
   const value = {
     user,
