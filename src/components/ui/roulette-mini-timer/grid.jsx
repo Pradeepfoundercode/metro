@@ -89,7 +89,7 @@ const OUTSIDE_BETS = [
 ]
 
 const CORNER_BETS = [
-  // Between Row 0 (top) & Row 1 (middle) - y = 110px
+  
   { key: '31-32-34-35', colIndex: 0, y: 110 },
   { key: '28-29-31-32', colIndex: 1, y: 110 },
   { key: '25-26-28-29', colIndex: 2, y: 110 },
@@ -102,7 +102,7 @@ const CORNER_BETS = [
   { key: '4-5-7-8',     colIndex: 9, y: 110 },
   { key: '1-2-4-5',     colIndex: 10, y: 110 },
 
-  // Between Row 1 (middle) & Row 2 (bottom) - y = 220px
+  
   { key: '32-33-35-36', colIndex: 0, y: 220 },
   { key: '29-30-32-33', colIndex: 1, y: 220 },
   { key: '26-27-29-30', colIndex: 2, y: 220 },

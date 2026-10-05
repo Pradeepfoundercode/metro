@@ -25,7 +25,7 @@ import greaterThan10Rs from '../../assets/timer_36/gr_than_10.png'
 
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import NeighbourPopup from '../../components/ui/roulette-mini-timer/NeighbourPopup'
-import GameHistoryPopup from '../../components/ui/GameHistoryPopup'
+import GameHistoryPopup from '../../components/ui/roulette-mini-timer/GameHistoryPopup'
 import RouletteGrid from '../../components/ui/roulette-mini-timer/grid'
 
 
@@ -193,7 +193,6 @@ export default function RouletteMiniTimer() {
 
     console.log(payload, ' payload')
     console.log('Bets Payload:', payload)
-    toast.success('Bet Placed Successfully')
     setIsBetConfirmed(true)
     setShowBetAccepted(true)
     setTimeout(() => {
@@ -693,6 +692,8 @@ export default function RouletteMiniTimer() {
         <GameHistoryPopup
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}
+          userName={user?.username || 'PRADEEP'}
+          balance={wallet}
         />
       </div>
     </div>

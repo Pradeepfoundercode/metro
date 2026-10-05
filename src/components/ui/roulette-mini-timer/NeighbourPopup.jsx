@@ -31,17 +31,17 @@ export default function NeighbourPopup({
       onClick={onClose}
     >
       <div
-        className="relative w-[92%] max-w-[960px] rounded-3xl border-2 border-[#e6b347] bg-[#0c1836] p-6 shadow-[0_0_50px_rgba(0,0,0,0.95)] flex flex-col items-center"
+        className="relative w-[96%] max-w-[1520px] rounded-[32px] border-[4px] border-[#e6b347] bg-[#0c1836] p-8 shadow-[0_0_80px_rgba(0,0,0,0.98)] flex flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
         <div className="flex w-full items-center justify-between pb-4 border-b border-white/20">
           <div className="flex items-center gap-3">
-            <h3 className="text-[24px] font-black tracking-wider text-white drop-shadow">
+            <h3 className="text-[30px] font-black tracking-wider text-white drop-shadow">
               NEIGHBOUR BETS
             </h3>
             {isLocked && (
-              <span className="text-[14px] font-black text-red-500 uppercase tracking-widest bg-red-950/80 border border-red-500/50 px-3 py-1 rounded-full animate-pulse">
+              <span className="text-[15px] font-black text-red-500 uppercase tracking-widest bg-red-950/80 border border-red-500/50 px-4 py-1.5 rounded-full animate-pulse">
                 Betting Closed
               </span>
             )}
@@ -49,19 +49,19 @@ export default function NeighbourPopup({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-[36px] w-[36px] items-center justify-center cursor-pointer transition hover:scale-105 active:scale-95"
+            className="flex h-[46px] w-[46px] items-center justify-center cursor-pointer transition hover:scale-105 active:scale-95"
           >
             <img src={cancelBtn} alt="Close" className="h-full w-full object-contain" />
           </button>
         </div>
 
         {/* RACETRACK IMAGE WITH DIRECT INTERACTIVE BET ZONES */}
-        <div className="relative mt-8 mb-6 flex items-center justify-center w-full max-w-[900px]">
+        <div className="relative mt-8 mb-6 flex items-center justify-center w-full max-w-[1420px]">
           <div className="relative w-full aspect-[840/170]">
             <img
               src={blueNeighbour}
               alt="Neighbour Racetrack"
-              className="w-full h-full object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] pointer-events-none select-none"
+              className="w-full h-full object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)] pointer-events-none select-none"
             />
 
             {/* INTERACTIVE BET OVERLAYS FOR TIERS, ORPHELIN, VOISINS, ZERO */}
@@ -91,7 +91,7 @@ export default function NeighbourPopup({
                     <PlacedChip
                       amount={amount}
                       chipValue={chip}
-                      size={28}
+                      size={38}
                     />
                   )}
                 </button>
