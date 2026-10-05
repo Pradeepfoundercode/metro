@@ -572,5 +572,5 @@ body {
 }
 
 .flash-border {
-  animation: flash 0.35s ease-in-out infinite;
+  animation: flash 0.15s ease-in-out infinite;
 }

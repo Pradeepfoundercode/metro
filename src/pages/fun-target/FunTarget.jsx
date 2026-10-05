@@ -72,7 +72,7 @@ export default function FunTarget() {
   const { user, userId } = useAuth()
   const { wallet, deductWallet, addWallet, setWallet } = useWalletStore()
 
-  const [timeLeft, setTimeLeft] = useState(40)
+  const [timeLeft, setTimeLeft] = useState(10)
   const [isSpinning, setIsSpinning] = useState(false)
   const [winnerNumber, setWinnerNumber] = useState(0)
   const [last10Data, setLast10Data] = useState([1, 4, 2, 8, 9, 4, 9, 9, 5, 1])
@@ -94,7 +94,7 @@ export default function FunTarget() {
   isBetAcceptedRef.current = isBetAccepted
 
   const spinTimeoutRef = useRef(null)
-
+  console.log(timeLeft)
   const handleBet = (num) => {
     if (isBettingClosed) return
     if (wallet < selectedChip) return
@@ -188,7 +188,7 @@ export default function FunTarget() {
       })
 
       setIsBetAccepted(false)
-      setTimeLeft(40)
+      setTimeLeft(10)
     }, 5000)
   }
 
@@ -246,17 +246,20 @@ export default function FunTarget() {
               alt="Time"
               className="h-[36px] w-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
             />
-            <div className="relative mt-1 flex h-[72px] w-[300px] items-center justify-center">
+            <div className="relative mt-1 flex h-[72px] w-[300px] items-center justify-center rounded-2xl">
               <img
                 src={rectangleFun}
                 alt="Time Frame"
-                className="pointer-events-none absolute inset-0 h-full w-full object-fill"
+                className="pointer-events-none absolute inset-0 h-full w-full object-fill rounded-2xl"
               />
               <span className="relative z-10 text-[26px] font-black tracking-widest text-black drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)]">
                 {isSpinning || timeLeft === 0
                   ? 'WAITING'
                   : `00 : ${timeLeft < 10 ? '0' + timeLeft : timeLeft}`}
               </span>
+              {timeLeft <= 5 && !isSpinning && timeLeft > 0 && (
+                <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl border-[10px] border-[#ffe600] p-1 flash-border" />
+              )}
             </div>
           </div>
         </div>
