@@ -7,6 +7,9 @@ import { DEFAULT_GAME_HISTORY } from '../../constants/funRouletteData'
 export default function GameHistoryPopup({
   isOpen,
   onClose,
+  title = 'ROULETTE GAME HISTORY',
+  gameName = 'FUN ROULETTE',
+  resultLabel = 'Ball Position',
   userName = 'PRADEEP',
   balance = 0,
   historyData = [],
@@ -32,7 +35,7 @@ export default function GameHistoryPopup({
       >
         <div className="mx-auto mt-12 flex w-[91%] items-start justify-between pt-4">
           <h2 className="mt-1 text-[26px] font-black tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-            ROULETTE GAME HISTORY
+            {title}
           </h2>
 
           <div className="flex flex-col items-end gap-2">
@@ -50,7 +53,7 @@ export default function GameHistoryPopup({
 
             <div className="flex items-center gap-1.5 rounded-lg border border-white bg-black/60 p-[3px] shadow">
               <div className="rounded-md border border-white bg-black/80 px-3.5 py-1 text-[15px] font-black tracking-wide text-white shadow">
-                FUN ROULETTE
+                {gameName}
               </div>
 
               <div className="rounded-md border border-white bg-black/80 px-3.5 py-1 text-[15px] font-black uppercase tracking-wide text-white shadow">
@@ -68,17 +71,19 @@ export default function GameHistoryPopup({
           <div className="grid grid-cols-5 border-b border-white bg-black/40 py-2.5 text-center text-[18px] font-black tracking-wide text-white">
             <div>NO.</div>
             <div>Games No.</div>
-            <div>Ball Position</div>
+            <div>{resultLabel}</div>
             <div>Play</div>
             <div>Won</div>
           </div>
 
           <div className="flex flex-col">
             {displayHistory.map((row, index) => {
-              const isBallNumber =
-                row.ballPosition !== '-' &&
-                row.ballPosition !== null &&
-                row.ballPosition !== undefined
+              const resultVal =
+                row.result !== undefined ? row.result : row.ballPosition
+              const isResultPresent =
+                resultVal !== '-' &&
+                resultVal !== null &&
+                resultVal !== undefined
 
               const hasWon = Number(row.won) > 0
 
@@ -92,12 +97,12 @@ export default function GameHistoryPopup({
 
                   <div
                     className={
-                      isBallNumber
+                      isResultPresent
                         ? 'text-[18px] font-black text-[#ffe600]'
                         : 'text-white/80'
                     }
                   >
-                    {row.ballPosition}
+                    {resultVal}
                   </div>
 
                   <div>{row.play}</div>

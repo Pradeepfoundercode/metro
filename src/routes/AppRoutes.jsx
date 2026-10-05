@@ -7,6 +7,7 @@ import ProtectedRoute from './ProtectedRoute'
 import DashboardPage from '../pages/dashboard/DashboardPage'
 import FunRoulette from '../pages/fun-roulette/FunRoulette'
 import RouletteMiniTimer from '../pages/roulette-mini-timer/RouletteMiniTimer'
+import FunTarget from '../pages/fun-target/FunTarget'
 
 export default function AppRoutes() {
   return (
@@ -19,6 +20,7 @@ export default function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/fun-roulette" element={<FunRoulette />} />
         <Route path="/roulette-mini-timer" element={<RouletteMiniTimer />} />
+        <Route path="/fun-target" element={<FunTarget />} />
       </Route>
 
       <Route

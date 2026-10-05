@@ -33,7 +33,12 @@ export default function DashboardPage() {
 
   const handleRouletteMiniTimer = async () => {
     await enterFullscreen()
-    navigate("/roulette-mini-timer")
+    navigate('/roulette-mini-timer')
+  }
+
+  const handleFunTarget = async () => {
+    await enterFullscreen()
+    navigate('/fun-target')
   }
 
   return (
@@ -198,15 +203,17 @@ export default function DashboardPage() {
               FUN TARGET
           ===================================== */}
 
-          <div className="flex h-[84%] min-w-0 flex-1 items-center justify-center">
-
+          <button
+            type="button"
+            onClick={handleFunTarget}
+            className="group flex h-[84%] min-w-0 flex-1 cursor-pointer items-center justify-center border-0 bg-transparent p-0 outline-none transition-transform duration-200 hover:scale-[1.025] active:scale-[0.98]"
+          >
             <img
               src={funTargetImg}
               alt="Fun Target"
               className="h-full w-full object-contain drop-shadow-[0_12px_25px_rgba(0,0,0,0.88)]"
             />
-
-          </div>
+          </button>
 
         </div>
 
