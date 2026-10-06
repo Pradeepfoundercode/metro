@@ -413,8 +413,8 @@ export default function RouletteGrid({
                           className={`
                             pointer-events-none
                             flex
-                            h-[54px]
-                            w-[68px]
+                            h-[53px]
+                            w-[62px]
                             items-center
                             justify-center
                             rounded-[50%]
