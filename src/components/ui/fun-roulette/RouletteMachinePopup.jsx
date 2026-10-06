@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react'
-import rouletteBg from '../../assets/bg.png'
-import wheelBlack from '../../assets/wheel_black.png'
-import diamondImg from '../../assets/roulette/wheel_diamond.png'
-import { playRouletteWheelSound, stopRouletteWheelSound, stopTickSound } from '../../utils/sound'
+import rouletteBg from '../../../assets/bg.png'
+import wheelBlack from '../../../assets/wheel_black.png'
+import diamondImg from '../../../assets/roulette/wheel_diamond.png'
+import { playRouletteWheelSound, stopRouletteWheelSound, stopTickSound } from '../../../utils/sound'
+import { ROULETTE_NUMBERS } from '../../../constants/funRouletteData'
+import { speak } from '../../../utils/audio'
 
-export default function RouletteMachinePopup({ isOpen, onClose }) {
+export default function RouletteMachinePopup({ isOpen, onClose, onResult }) {
   const [wheelAngle, setWheelAngle] = useState(0)
   const [ballAngle, setBallAngle] = useState(0)
   const [isStopped, setIsStopped] = useState(false)
@@ -24,8 +26,21 @@ export default function RouletteMachinePopup({ isOpen, onClose }) {
     stopTickSound()
     playRouletteWheelSound()
 
-    const randomIdx = Math.floor(Math.random() * 38)
-    const pocketOffset = (randomIdx * 360) / 38 + 360 / 76
+    const randomIdx = Math.floor(
+  Math.random() * ROULETTE_NUMBERS.length
+)
+
+const winnerNumber = ROULETTE_NUMBERS[randomIdx]
+
+const POCKET_COUNT = ROULETTE_NUMBERS.length
+const POCKET_ANGLE = 360 / POCKET_COUNT
+
+const WHEEL_OFFSET = -POCKET_ANGLE
+
+const pocketOffset =
+  randomIdx * POCKET_ANGLE +
+  POCKET_ANGLE / 2 +
+  WHEEL_OFFSET
 
     const totalWheelSpins = 4
     const totalBallSpins = 8
@@ -45,10 +60,17 @@ export default function RouletteMachinePopup({ isOpen, onClose }) {
       setBallAngle(currentBallAngle)
 
       if (progress < 1) {
-        animRef.current = requestAnimationFrame(animate)
-      } else {
-        setIsStopped(true)
-      }
+  animRef.current = requestAnimationFrame(animate)
+} else {
+  setIsStopped(true)
+
+  speak(`Winning number is ${winnerNumber}`)
+
+  onResult?.({
+    number: winnerNumber,
+    index: randomIdx,
+  })
+}
     }
 
     animRef.current = requestAnimationFrame(animate)

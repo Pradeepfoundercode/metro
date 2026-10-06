@@ -4,8 +4,12 @@ import { useAuth } from '../../hooks/useAuth'
 import { useWalletStore } from '../../store/useWalletStore'
 import toast from 'react-hot-toast'
 import { getGameId, createBetPayload } from '../../utils/helper'
-import { playGameTapSound, playBlueWheelSound, stopBlueWheelSound } from '../../utils/sound'
-
+import {
+  playGameTapSound,
+  playBlueWheelSound,
+  stopBlueWheelSound,
+  playCoinSplashSound,
+} from '../../utils/sound'
 const RED_NUMS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
 const BLACK_NUMS = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35]
 
@@ -25,60 +29,16 @@ import clearBetBtn from '../../assets/timer_36/clear_bet.png'
 import removeBtn from '../../assets/timer_36/remove.png'
 import pleaseSelectChipsImg from '../../assets/timer_36/please_select_chips.png'
 import greaterThan10Rs from '../../assets/timer_36/gr_than_10.png'
+import lastCallImg from '../../assets/timer_36/last_call.png'
 
-import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import ConfirmDialog from '../../components/common/ConfirmDialog'
 import NeighbourPopup from '../../components/ui/roulette-mini-timer/NeighbourPopup'
 import GameHistoryPopup from '../../components/ui/roulette-mini-timer/GameHistoryPopup'
 import RouletteGrid from '../../components/ui/roulette-mini-timer/grid'
+import { speak } from '../../utils/audio'
+import { ITEMS, MIN_10_BET_SPOTS, ROULETTE_ORDER, STYLE } from '../../constants/rouletteTimerData'
 
-const ITEMS = [
-  [35, "l"],
-  [1, "r"],
-  [0, "m"],
-  [13, "l"],
-  [31, "l"],
-  [0, "m"],
-  [1, "r"],
-  [2, "l"],
-  [21, "r"],
-  [26, "l"],
-];
 
-const STYLE = {
-  l: "justify-start text-yellow",
-  m: "justify-center text-green",
-  r: "justify-end text-red",
-};
-
-const MIN_10_BET_SPOTS = [
-  '1st12',
-  '2nd12',
-  '3rd12',
-  'col-0',
-  'col-1',
-  'col-2',
-  '1-18',
-  'even',
-  'red',
-  'black',
-  'odd',
-  '19-36',
-  '1ST12',
-  '2ND12',
-  '3RD12',
-  'ROW_1',
-  'ROW_2',
-  'ROW_3',
-  'EVEN',
-  'RED',
-  'BLACK',
-  'ODD',
-];
-
-const ROULETTE_ORDER = [
-  0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
-  5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
-];
 
 const getWheelAngle = (num) => {
   const idx = ROULETTE_ORDER.indexOf(Number(num));
@@ -118,6 +78,12 @@ export default function RouletteMiniTimer() {
   useEffect(() => {
     playGameTapSound()
   }, [])
+
+  useEffect(() => {
+  if (timeLeft === 20 && !isSpinning) {
+    speak('Last call')
+  }
+}, [timeLeft, isSpinning])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -171,6 +137,7 @@ export default function RouletteMiniTimer() {
         setIsSpinning(false)
 
         const newWinner = pendingWinnerRef.current
+        speak(`Win number is ${newWinner}`)
         setWinningNumber(newWinner)
 
         const side = newWinner === 0 ? 'm' : RED_NUMS.includes(newWinner) ? 'r' : 'l'
@@ -255,6 +222,7 @@ export default function RouletteMiniTimer() {
       setShowPleaseSelectChips(false)
       setShowWaitToComplete(false)
       setShowGreaterThan10(true)
+      speak('greater than 10 rupees')
       if (greaterThan10TimeoutRef.current) clearTimeout(greaterThan10TimeoutRef.current)
       greaterThan10TimeoutRef.current = setTimeout(() => {
         setShowGreaterThan10(false)
@@ -278,6 +246,7 @@ export default function RouletteMiniTimer() {
 
     setShowWaitToComplete(false)
     deductWallet(amount)
+    playCoinSplashSound()
     setTotalBet((prev) => prev + amount)
     setBets((prev) => ({
       ...prev,
@@ -297,47 +266,71 @@ export default function RouletteMiniTimer() {
   }
 
   const handleBetConfirm = () => {
-    if (betHistory.length === 0 || isBetConfirmed || isSpinning || timeLeft <= 10) return
-
-    const payload = createBetPayload(betHistory, user, '450538')
-    if (!payload) return
-
-    console.log(payload, ' payload')
-    console.log('Bets Payload:', payload)
-    setIsBetConfirmed(true)
-    setShowBetAccepted(true)
-    setTimeout(() => {
-      setShowBetAccepted(false)
-    }, 2500)
+  if (betHistory.length === 0 || isBetConfirmed || isSpinning || timeLeft <= 10) {
+    return
   }
+
+  const payload = createBetPayload(betHistory, user, '450538')
+
+  if (!payload) return
+
+  console.log(payload, 'payload')
+  console.log('Bets Payload:', payload)
+
+  setIsBetConfirmed(true)
+  setShowBetAccepted(true)
+  
+  speak('Bet accepted successfully')
+setBets({})
+  setTimeout(() => {
+    setShowBetAccepted(false)
+  }, 2500)
+}
 
   const handleClearBets = () => {
-    if (isBetConfirmed) {
-      toast.error("Confirmed bets cannot be cleared")
-      return
-    }
-
-    if (isSpinning || timeLeft <= 10) {
-      toast.error("You can't clear bets during spin or last 10 seconds")
-      return
-    }
-
-    if (betHistory.length === 0) {
-      return
-    }
-
-    const refundAmount = betHistory.reduce(
-      (total, bet) => total + bet.amount,
-      0
-    )
-
-    addWallet(refundAmount)
-    setBets({})
-    setBetChips({})
-    setBetHistory([])
-    setTotalBet(0)
-    toast.success('All bets cleared')
+  if (isBetConfirmed) {
+    toast.error('Confirmed bets cannot be cleared')
+    return
   }
+
+  if (isSpinning || timeLeft <= 10) {
+    setShowPleaseSelectChips(false)
+    setShowGreaterThan10(false)
+    setShowWaitToComplete(true)
+
+    speak('Please wait to complete Last Game')
+
+    if (waitTimeoutRef.current) {
+      clearTimeout(waitTimeoutRef.current)
+    }
+
+    waitTimeoutRef.current = setTimeout(() => {
+      setShowWaitToComplete(false)
+    }, 2500)
+
+   
+
+    return
+  }
+
+  if (betHistory.length === 0) {
+    return
+  }
+
+  const refundAmount = betHistory.reduce(
+    (total, bet) => total + bet.amount,
+    0
+  )
+
+  addWallet(refundAmount)
+
+  setBets({})
+  setBetChips({})
+  setBetHistory([])
+  setTotalBet(0)
+
+  
+}
 
   const handleDoubleBets = () => {
     if (isBetConfirmed) {
@@ -349,6 +342,7 @@ export default function RouletteMiniTimer() {
       setShowPleaseSelectChips(false)
       setShowGreaterThan10(false)
       setShowWaitToComplete(true)
+      speak('Please wait to complete Last Game')
       if (waitTimeoutRef.current) clearTimeout(waitTimeoutRef.current)
       waitTimeoutRef.current = setTimeout(() => {
         setShowWaitToComplete(false)
@@ -606,6 +600,15 @@ export default function RouletteMiniTimer() {
             />
           </div>
         )}
+        {timeLeft === 20 && !isSpinning && (
+  <div className="pointer-events-none absolute left-[960px] top-[480px] z-[60] flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+    <img
+      src={lastCallImg}
+      alt="LAST CALL"
+      className="h-[46px] w-[540px] object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]"
+    />
+  </div>
+)}
 
         {showBetAccepted && (
           <div className="pointer-events-none absolute left-[960px] top-[480px] z-40 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
@@ -687,41 +690,45 @@ export default function RouletteMiniTimer() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleRemoveChip}
-          className="absolute left-[810px] top-[825px] z-20 flex h-[80px] w-[235px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
-        >
-          <img
-            src={removeBtn}
-            alt="REMOVE"
-            className="h-full w-full object-contain drop-shadow"
-          />
-        </button>
+        {timeLeft > 10 && !isSpinning && (
+          <>
+            <button
+              type="button"
+              onClick={handleRemoveChip}
+              className="absolute left-[810px] top-[825px] z-20 flex h-[80px] w-[235px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
+            >
+              <img
+                src={removeBtn}
+                alt="REMOVE"
+                className="h-full w-full object-contain drop-shadow"
+              />
+            </button>
 
-        <button
-          type="button"
-          onClick={handleDoubleBets}
-          className="absolute left-[1020px] top-[825px] z-20 flex h-[80px] w-[230px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
-        >
-          <img
-            src={doubleBtn}
-            alt="DOUBLE"
-            className="h-full w-full object-contain drop-shadow"
-          />
-        </button>
+            <button
+              type="button"
+              onClick={handleDoubleBets}
+              className="absolute left-[1020px] top-[825px] z-20 flex h-[80px] w-[230px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
+            >
+              <img
+                src={doubleBtn}
+                alt="DOUBLE"
+                className="h-full w-full object-contain drop-shadow"
+              />
+            </button>
 
-        <button
-          type="button"
-          onClick={handleClearBets}
-          className="absolute left-[1220px] top-[825px] z-20 flex h-[80px] w-[230px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
-        >
-          <img
-            src={clearBetBtn}
-            alt="CLEAR BET"
-            className="h-full w-full object-contain drop-shadow"
-          />
-        </button>
+            <button
+              type="button"
+              onClick={handleClearBets}
+              className="absolute left-[1220px] top-[825px] z-20 flex h-[80px] w-[230px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
+            >
+              <img
+                src={clearBetBtn}
+                alt="CLEAR BET"
+                className="h-full w-full object-contain drop-shadow"
+              />
+            </button>
+          </>
+        )}
 
         <button
           type="button"

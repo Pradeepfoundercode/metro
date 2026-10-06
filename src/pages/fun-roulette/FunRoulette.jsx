@@ -19,17 +19,19 @@ import noDesignPill from '../../assets/roulette/no_designe.png'
 import extraboxleft from '../../assets/roulette/extra_box_left_design.png'
 import redOvalBtn from '../../assets/roulette/red_button.png'
 import blackOvalBtn from '../../assets/roulette/black_button.png'
+import betsAccepted from '../../assets/timer_36/bet_accepted.png'
 import greenOvalBtn from '../../assets/roulette/green_button.png'
 import redDiamondImg from '../../assets/roulette/red_diamond.png'
+import lastCall from '../../assets/timer_36/last_call.png'
 import blackDiamondImg from '../../assets/roulette/black_diamond.png'
 import infoIcon from '../../assets/info.png'
 import rouletteGrid from '../../assets/roulette/grid.png'
 import waitToComplete from '../../assets/timer_36/wait_to_complete.png'
 import placeYourBets from '../../assets/timer_36/pace_your_bets.png'
 import greaterThan10Rs from '../../assets/timer_36/gr_than_10.png'
-import RouletteMachinePopup from '../../components/ui/RouletteMachinePopup'
-import GameHistoryPopup from '../../components/ui/GameHistoryPopup'
-import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import RouletteMachinePopup from '../../components/ui/fun-roulette/RouletteMachinePopup'
+import GameHistoryPopup from '../../components/common/GameHistoryPopup'
+import ConfirmDialog from '../../components/common/ConfirmDialog'
 
 
 import bet1 from "../../assets/timer_36/2.png"
@@ -47,9 +49,10 @@ import {
   ROW_2,
   ROW_3,
 } from '../../constants/funRouletteData'
-import { placeFunRouletteBet } from '../../services/funroulette.services'
+import { placeFunRouletteBet } from '../../services/funroulette.service'
 import { getGameId, createBetPayload } from '../../utils/helper'
-import { playGameTapSound, playTickSound, stopTickSound } from '../../utils/sound'
+import { playCoinSplashSound, playGameTapSound, playTickSound, stopTickSound } from '../../utils/sound'
+import { speak } from '../../utils/audio'
 
 
 const MIN_10_BET_SPOTS = [
@@ -97,6 +100,8 @@ export default function FunRoulette() {
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
+  const [showBetAccepted, setShowBetAccepted] = useState(false)
+  const [showPlaceYourBets, setShowPlaceYourBets] = useState(true)
 
   const [winnerNumber, setWinnerNumber] = useState('0')
 
@@ -125,6 +130,12 @@ export default function FunRoulette() {
     playGameTapSound()
   }, [])
 
+  useEffect(() => {
+  if (timeLeft === 20 && !isPopupOpen) {
+    speak('Last call')
+  }
+}, [timeLeft, isPopupOpen])
+
  const handlePlaceBet = (spot) => {
   if (isLocked || !selectedChip) {
     return
@@ -132,14 +143,16 @@ export default function FunRoulette() {
 
   
   if (timeLeft <= 10) {
-    setShowWaitToComplete(true)
-    return
-  }
+  setShowWaitToComplete(true)
+  speak('Please wait to complete Last Game')
+  return
+}
 
   const requiresMinimum10 = MIN_10_BET_SPOTS.includes(spot)
 
   if (requiresMinimum10 && selectedChip < 10) {
     setShowGreaterThan10(true)
+     speak('greater than 10 rupees')
     return
   }
 
@@ -152,7 +165,7 @@ export default function FunRoulette() {
   }
 
   deductWallet(selectedChip)
-
+playCoinSplashSound()
   setBets((prev) => ({
     ...prev,
     [spot]: (prev[spot] || 0) + selectedChip,
@@ -173,6 +186,7 @@ export default function FunRoulette() {
   }
 
   if (timeLeft <= 10) {
+    speak("You can not cancel bets in the last 10 seconds")
     toast.error("You can't cancel bets in the last 10 seconds")
     return
   }
@@ -220,6 +234,7 @@ export default function FunRoulette() {
   }
 
   if (timeLeft <= 10) {
+    speak("You can not cancel bets in the last 10 seconds")
     toast.error("You can't cancel bets in the last 10 seconds")
     return
   }
@@ -243,14 +258,34 @@ export default function FunRoulette() {
   // )
 }
 
-  const handleBetOk = () => {
-    const payload = createBetPayload(betHistory, user, '450538')
-    if (!payload) return
+const handleBetOk = async () => {
+  const payload = createBetPayload(betHistory, user, '450538')
 
-    console.log(payload, " payload")
-    console.log('Bets Payload:', payload)
-    toast.success('Bet Placed Successfully')
+  if (!payload) return
+
+  try {
+    const response = await placeFunRouletteBet(payload)
+
+    console.log(response, 'bet response')
+
+    setIsLocked(true)
+    setShowBetAccepted(true)
+    setBets({})
+    setShowPlaceYourBets(false)
+    
+    setShowWaitToComplete(false)
+    setShowGreaterThan10(false)
+
+    speak('Bet accepted successfully')
+
+    setTimeout(() => {
+      setShowBetAccepted(false)
+    }, 1500)
+  } catch (error) {
+    console.error('Bet placement failed:', error)
+    toast.error('Failed to place bet')
   }
+}
 
 
 
@@ -336,15 +371,19 @@ export default function FunRoulette() {
   // 3. When timeLeft reaches 0, cleanly transition to/from the 10s wheel popup
   useEffect(() => {
     if (timeLeft === 0) {
-      if (!isPopupOpen) {
-        setIsPopupOpen(true)
-        setBets({})
-        setTimeLeft(10)
-      } else {
-        setIsPopupOpen(false)
-        setTimeLeft(initialTimeRef.current || 25)
-      }
-    }
+  if (!isPopupOpen) {
+    setIsPopupOpen(true)
+    setBets({})
+    setShowWaitToComplete(false)
+    setShowGreaterThan10(false)
+    setTimeLeft(10)
+  } else {
+    setIsPopupOpen(false)
+    setShowWaitToComplete(false)
+    setShowGreaterThan10(false)
+    setTimeLeft(initialTimeRef.current || 25)
+  }
+}
   }, [timeLeft, isPopupOpen])
 
   const handleClosePopup = () => {
@@ -499,18 +538,28 @@ export default function FunRoulette() {
   {/* PLACE YOUR BETS */}
 
   <div className="relative -mt-[2px] flex w-[85%] items-center justify-center">
+  {(showBetAccepted ||
+    showWaitToComplete ||
+    showGreaterThan10 ||
+    showPlaceYourBets ||
+    timeLeft === 20) && (
     <img
-  src={
-    timeLeft <= 10
-      ? waitToComplete
-      : showGreaterThan10
-        ? greaterThan10Rs
-        : placeYourBets
-  }
-  alt="Bet Message"
-  className="h-[30px] w-full object-fill"
-/>
-  </div>
+      src={
+        showBetAccepted
+          ? betsAccepted
+          : showWaitToComplete
+            ? waitToComplete
+            : showGreaterThan10
+              ? greaterThan10Rs
+              : timeLeft === 20
+                ? lastCall
+                : placeYourBets
+      }
+      alt="Bet Message"
+      className="h-[30px] w-full object-fill"
+    />
+  )}
+</div>
 
 </div>
 
@@ -593,10 +642,15 @@ export default function FunRoulette() {
             <div className="mt-[1.5%] flex w-full flex-col items-end gap-[2%]">
 
               <button
-                type="button"
-                onClick={handleBetOk}
-                className="relative mr-[8%] flex w-[80%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
-              >
+  type="button"
+  onClick={handleBetOk}
+  disabled={isLocked}
+  className={`relative mr-[8%] flex w-[80%] items-center justify-center transition ${
+    isLocked
+      ? 'cursor-not-allowed opacity-60'
+      : 'cursor-pointer hover:brightness-110 active:scale-95'
+  }`}
+>
 
                 <img
                   src={extraRight}
@@ -1467,15 +1521,21 @@ export default function FunRoulette() {
           </div>
 
         </div>
+        
 
-        {/* =========================
-            ROULETTE MACHINE POPUP (SHOWS ON TIMER 0)
-        ========================= */}
         <RouletteMachinePopup
-          isOpen={isPopupOpen}
-          onClose={handleClosePopup}
-          timeLeft={timeLeft}
-        />
+  isOpen={isPopupOpen}
+  onClose={handleClosePopup}
+  onResult={({ number }) => {
+    setWinnerNumber(number)
+    setWinningSpot(number)
+
+    setHistoryList((prev) => [
+      number,
+      ...prev,
+    ].slice(0, 5))
+  }}
+/>
 
         {/* =========================
             ROULETTE GAME HISTORY POPUP

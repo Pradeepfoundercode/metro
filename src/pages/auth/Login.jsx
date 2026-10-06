@@ -9,6 +9,7 @@ import loginBtn from "../../assets/button/login_btn.png";
 import { useAuth } from "../../hooks/useAuth";
 import { useLogin } from "../../hooks/useLogin";
 import { useFullscreenLandscape } from "../../hooks/useFullscreen";
+import { speak } from "../../utils/audio";
 
 export default function Login() {
   const { enterFullscreen } = useFullscreenLandscape();
@@ -38,7 +39,7 @@ export default function Login() {
     if (!isAuthenticated) {
       return;
     }
-
+  speak('Welcome to Metro Game')
     navigate("/dashboard", {
       replace: true,
     });

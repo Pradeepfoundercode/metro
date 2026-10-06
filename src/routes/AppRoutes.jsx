@@ -1,13 +1,14 @@
 import React from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import SplashPage from '../components/ui/SplashPage'
+
 import Login from '../pages/auth/Login'
 import ProtectedRoute from './ProtectedRoute'
 import DashboardPage from '../pages/dashboard/DashboardPage'
 import FunRoulette from '../pages/fun-roulette/FunRoulette'
 import RouletteMiniTimer from '../pages/roulette-mini-timer/RouletteMiniTimer'
 import FunTarget from '../pages/fun-target/FunTarget'
+import SplashPage from '../components/common/SplashPage'
 
 export default function AppRoutes() {
   return (

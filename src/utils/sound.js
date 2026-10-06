@@ -2,6 +2,8 @@ import gameTapSoundFile from '../assets/sounds/game_tap_sound.mp3'
 import tickSoundFile from '../assets/sounds/tick.mp3'
 import rouletteWheelNewSoundFile from '../assets/sounds/roulette_wheel_new.mp3'
 import blueWheelSoundFile from '../assets/sounds/blue_wheel.mp3'
+import coinSplash from '../assets/sounds/coin_splash.mp3'
+import placeChipSound from '../assets/sounds/placechip.mp3'
 
 let tapAudio = null
 let lastPlayTime = 0
@@ -119,6 +121,32 @@ export const stopMoveChakraSound = () => {
       moveChakraAudio.pause()
       moveChakraAudio.currentTime = 0
     }
+  } catch (e) {
+    // Autoplay restrictions or unsupported audio
+  }
+}
+
+
+
+
+
+
+
+
+const coinSplashSound = new Audio(coinSplash)
+
+export const playCoinSplashSound = () => {
+  coinSplashSound.currentTime = 0
+  coinSplashSound.play().catch(() => {})
+}
+
+
+const placeChipAudio = new Audio(placeChipSound)
+
+export const playPlaceChipSound = () => {
+  try {
+    placeChipAudio.currentTime = 0
+    placeChipAudio.play().catch(() => {})
   } catch (e) {
     // Autoplay restrictions or unsupported audio
   }

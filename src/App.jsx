@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast'
 import AppRoutes from './routes/AppRoutes'
 import queryClient from './utils/queryClient'
 import { AuthProvider } from './context/AuthContext'
-import OrientationGuard from './components/ui/OrientationGuard'
+import OrientationGuard from '../src/components/common/OrientationGuard'
 
 export default function App() {
   return (
