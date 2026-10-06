@@ -95,7 +95,7 @@ export default function FunRoulette() {
   const [betHistory, setBetHistory] = useState([])
   const [showWaitToComplete, setShowWaitToComplete] = useState(false)
 
-  const [timeLeft, setTimeLeft] = useState(25)
+  const [timeLeft, setTimeLeft] = useState(40)
   const initialTimeRef = useRef(timeLeft)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -321,29 +321,35 @@ const handleBetOk = async () => {
     return bet1
   }
 
-  const renderChipBadge = (spot) => {
-    const value = bets[spot]
+  const renderChipBadge = (spot, small = false) => {
+  const value = bets[spot]
 
-    if (!value) {
-      return null
-    }
-
-    return (
-      <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-        <div className="relative flex items-center justify-center">
-          <img
-            src={getChipAsset(value)}
-            alt="chip"
-            className=" max-h-11 max-w-14 object-contain drop-shadow"
-          />
-
-          <span className="absolute text-[clamp(7px,0.65vw,11px)] md:text-[15px] font-black  ">
-            {value}
-          </span>
-        </div>
-      </div>
-    )
+  if (!value) {
+    return null
   }
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+      <div className="relative flex items-center justify-center">
+        <img
+          src={getChipAsset(value)}
+          alt="chip"
+          className={`${small ? 'h-10.5 w-10.5' : 'h-13 w-13'} object-fill drop-shadow`}
+        />
+
+        <span
+          className={`absolute font-inter font-semibold  ${
+            small
+              ? 'text-[24px]'
+              : 'text-[28px]'
+          }`}
+        >
+          {value}
+        </span>
+      </div>
+    </div>
+  )
+}
 
 
 
@@ -381,14 +387,14 @@ const handleBetOk = async () => {
     setIsPopupOpen(false)
     setShowWaitToComplete(false)
     setShowGreaterThan10(false)
-    setTimeLeft(initialTimeRef.current || 25)
+    setTimeLeft(initialTimeRef.current || 40)
   }
 }
   }, [timeLeft, isPopupOpen])
 
   const handleClosePopup = () => {
     setIsPopupOpen(false)
-    setTimeLeft(initialTimeRef.current || 25)
+    setTimeLeft(initialTimeRef.current || 40)
   }
 
 
@@ -416,19 +422,19 @@ const handleBetOk = async () => {
 
           {/* SCORE */}
 
-          <div className="absolute left-[4%] top-[20%] flex w-[23%] flex-col items-start">
+          <div className="absolute left-[2%] top-[20%] flex w-[25%] flex-col items-start">
 
             <div className="relative flex w-full items-center justify-center">
 
               <img
   src={scoreHd}
   alt="Score"
-  className="h-[85px] w-[200%] object-fill"
+  className="h-[85px] w-[240%] object-fill"
 />
 
               <div className="absolute bottom-[20%] left-0 right-0 flex items-center justify-center">
 
-                <span className="text-[20px] font-bold tracking-wide text-white">
+                <span className="text-[18px] font-bold tracking-wide text-white">
                   {Number(wallet).toFixed(2)}
                 </span>
 
@@ -438,20 +444,20 @@ const handleBetOk = async () => {
 
             {/* TIME */}
 
-            <div className="relative mt-[1%] ml-[7%] flex w-[78%] items-center justify-center">
+            <div className="relative mt-[5%] ml-[7%] flex w-[78%] items-center justify-center">
 
   <img
     src={noblink}
     alt="Time Left"
-    className="w-[100%] h-[79px] object-contain"
+    className="w-[110%] h-[75px] object-fill"
   />
 
   {/* Top & Bottom Blinking Border (Dip-Dip) when timeLeft <= 20 */}
   {timeLeft <= 20 && (
-    <div className="pointer-events-none absolute inset-x-[7%] top-[19%] bottom-[38%] border-t-[5px] border-b-[5px] rounded-[4px] flash-border w-[85%]" />
+    <div className="pointer-events-none absolute inset-x-[7%] top-[7%] bottom-[34%] border-t-[5px] border-b-[5px] rounded-[4px] flash-border w-[85%]" />
   )}
 
-  <span className="absolute  whitespace-nowrap text-[19px] top-4 font-bold tracking-wide text-white drop-shadow">
+  <span className="absolute  whitespace-nowrap text-[18px] top-4 font-bold tracking-wide text-white drop-shadow">
     Time Left: {timeLeft}
   </span>
 
@@ -459,9 +465,9 @@ const handleBetOk = async () => {
 
             {/* CHIPS */}
 
-           <div className="mt-[4%] flex w-full flex-col gap-3">
+           <div className="mt-[4%] flex w-full flex-col gap-2">
 
-  <div className="flex items-center justify-center gap-[5%]">
+  <div className="flex items-center justify-center gap-2">
     {CHIPS.slice(0, 4).map((chip) => (
       <button
         key={chip.value}
@@ -470,22 +476,22 @@ const handleBetOk = async () => {
         style={{
           '--chip-glow': CHIP_GLOW_COLORS[chip.value],
         }}
-        className={`relative w-[25%] cursor-pointer transition-transform duration-200 ${
-          selectedChip === chip.value
-            ? 'scale-120 selected-chip-glow'
-            : 'hover:scale-105 active:scale-95'
-        }`}
+        className="relative w-[22%] cursor-pointer transition-transform duration-200 hover:scale-105"
       >
         <img
           src={chip.img}
           alt={`chip ${chip.value}`}
-          className="h-auto w-full object-contain"
+          className={`h-auto w-full object-contain ${
+            selectedChip === chip.value
+              ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
+              : ''
+          }`}
         />
       </button>
     ))}
   </div>
 
-  <div className="flex items-center justify-center gap-[5%]">
+  <div className="flex items-center justify-center gap-2">
     {CHIPS.slice(4, 8).map((chip) => (
       <button
         key={chip.value}
@@ -494,16 +500,16 @@ const handleBetOk = async () => {
         style={{
           '--chip-glow': CHIP_GLOW_COLORS[chip.value],
         }}
-        className={`relative w-[25%] cursor-pointer transition-transform duration-200 ${
-          selectedChip === chip.value
-            ? 'scale-120 selected-chip-glow'
-            : 'hover:scale-105 active:scale-95'
-        }`}
+        className="relative w-[22%] cursor-pointer transition-transform duration-200 hover:scale-105"
       >
         <img
           src={chip.img}
           alt={`chip ${chip.value}`}
-          className="h-auto w-full object-contain"
+          className={`h-auto w-full object-contain ${
+            selectedChip === chip.value
+              ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
+              : ''
+          }`}
         />
       </button>
     ))}
@@ -579,7 +585,7 @@ const handleBetOk = async () => {
 
               <div className="absolute inset-x-0 bottom-[20%] flex items-center justify-center">
 
-                <span className="text-[30px] mb-1  font-bold tracking-wide text-[#39ff14] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                <span className="text-[25px] mb-1  font-bold tracking-wide text-[#39ff14] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
                   {winnerNumber}
                 </span>
 
@@ -600,7 +606,7 @@ const handleBetOk = async () => {
                 className="h-[70px] w-full object-contain"
               />
 
-              <div className="absolute inset-x-[18%] top-[30%] flex items-center justify-around">
+              <div className="absolute inset-x-[18%] top-[35%] flex items-center justify-around">
 
                 {historyList.map(
                   (value, index) => {
@@ -618,7 +624,7 @@ const handleBetOk = async () => {
                     return (
                       <span
                         key={`${value}-${index}`}
-                        className={`text-[20px]  font-black drop-shadow ${
+                        className={`text-[17px]  font-black drop-shadow ${
                           value === '0' ||
                           value === '00'
                             ? 'text-[#39ff14]'
@@ -655,32 +661,32 @@ const handleBetOk = async () => {
                 <img
                   src={extraRight}
                   alt="Bet Ok"
-                  className="h-[50px] w-full object-fill"
+                  className="h-[55px] w-full object-fill"
                 />
 
-                <span className="absolute text-[20px]  font-bold text-white drop-shadow mr-4 mt-1">
+                <span className="absolute text-[18px] mt-3 mr-20 font-bold text-white drop-shadow mr-4 mt-1">
                   Bet Ok
                 </span>
 
               </button>
 
-              <div className="flex w-[125%] items-center justify-end gap-[2%]">
+              <div className="flex w-[130%] items-center justify-end ">
 
                 <button
                   type="button"
                   onClick={
                     handleCancelBet
                   }
-                  className="relative flex w-[50%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
+                  className="relative flex w-[55%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
                 >
 
                   <img
                     src={noDesignPill}
                     alt="Cancel Bet"
-                    className="h-[40px] w-full object-fill"
+                    className="h-[43px] w-full object-fill"
                   />
 
-                  <span className="absolute whitespace-nowrap text-[20px] font-bold text-white drop-shadow">
+                  <span className="absolute whitespace-nowrap text-[18px] font-bold text-white drop-shadow">
                     Cancel Bet
                   </span>
 
@@ -691,16 +697,16 @@ const handleBetOk = async () => {
                   onClick={
                     handleSpecificCancelBet
                   }
-                  className="relative flex w-[50%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
+                  className="relative flex w-[60%] cursor-pointer items-center justify-center transition hover:brightness-110 active:scale-95"
                 >
 
                   <img
                     src={noDesignPill}
                     alt="Specific Cancel Bet"
-                    className="h-[40px] w-full object-fill"
+                    className="h-[43px] w-full object-fill"
                   />
 
-                  <span className="absolute whitespace-nowrap text-[20px] font-bold text-white drop-shadow">
+                  <span className="absolute whitespace-nowrap text-[18px] font-bold text-white drop-shadow">
                     Specific Cancel Bet
                   </span>
 
@@ -746,17 +752,11 @@ const handleBetOk = async () => {
                   className="h-[70%] w-[82%] object-contain"
                 />
 
-                <span className="absolute text-[22px] font-black text-white drop-shadow">
+                <span className="absolute text-[25px] font-black text-white drop-shadow">
                   00
                 </span>
 
-                {winningSpot === '00' && (
-                  <img
-                    src={blinkGif}
-                    alt="blink"
-                    className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-                  />
-                )}
+               
 
                 {renderChipBadge('00')}
 
@@ -778,17 +778,11 @@ const handleBetOk = async () => {
                   className="h-[70%] w-[82%] object-contain"
                 />
 
-                <span className="absolute text-[22px] font-black text-white drop-shadow">
+                <span className="absolute text-[25px] font-black text-white drop-shadow">
                   0
                 </span>
 
-                {winningSpot === '0' && (
-                  <img
-                    src={blinkGif}
-                    alt="blink"
-                    className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-                  />
-                )}
+               
 
                 {renderChipBadge('0')}
 
@@ -824,20 +818,14 @@ const handleBetOk = async () => {
                 : blackOvalBtn
             }
             alt={spot}
-            className="h-[60%] w-[75%] object-fill"
+            className="h-[65%] w-[77%] object-fill"
           />
 
-          <span className="absolute text-[28px] font-black text-white drop-shadow">
+          <span className="absolute text-[26px] font-black text-white drop-shadow font-aclonica">
             {number}
           </span>
 
-          {winningSpot === spot && (
-            <img
-              src={blinkGif}
-              alt="blink"
-              className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-            />
-          )}
+       
 
           {renderChipBadge(spot)}
 
@@ -878,7 +866,7 @@ const handleBetOk = async () => {
         onClick={() => handlePlaceBet(spot)}
         className="relative h-[12px] w-[8.33%] cursor-pointer"
       >
-        {renderChipBadge(spot)}
+        {renderChipBadge(spot, true)}
       </button>
     ))}
 
@@ -909,7 +897,7 @@ const handleBetOk = async () => {
         onClick={() => handlePlaceBet(spot)}
         className="relative h-[12px] w-[8.33%] cursor-pointer"
       >
-        {renderChipBadge(spot)}
+        {renderChipBadge(spot, true)}
       </button>
     ))}
 
@@ -954,7 +942,7 @@ const handleBetOk = async () => {
         cursor-pointer
       "
     >
-      {renderChipBadge(spot)}
+      {renderChipBadge(spot, true)}
     </button>
   ))}
 
@@ -1006,7 +994,7 @@ const handleBetOk = async () => {
         justify-center
       "
     >
-      {renderChipBadge(spot)}
+      {renderChipBadge(spot, true)}
     </button>
   ))}
 
@@ -1050,7 +1038,7 @@ const handleBetOk = async () => {
         justify-center
       "
     >
-      {renderChipBadge(spot)}
+      {renderChipBadge(spot, true)}
     </button>
   ))}
 
@@ -1095,7 +1083,7 @@ const handleBetOk = async () => {
         justify-center
       "
     >
-      {renderChipBadge(spot)}
+      {renderChipBadge(spot, true)}
     </button>
   ))}
 
@@ -1137,14 +1125,14 @@ const handleBetOk = async () => {
         -translate-x-1/2
         translate-y-1/2
         flex
-        h-[27px]
-        w-[34px]
+        h-[44px]
+        w-[50px]
         cursor-pointer
         items-center
         justify-center
       "
     >
-      {renderChipBadge(spot)}
+      {renderChipBadge(spot, true)}
     </button>
   ))}
 
@@ -1190,7 +1178,7 @@ const handleBetOk = async () => {
       cursor-pointer
     "
   >
-    {renderChipBadge(spot)}
+    {renderChipBadge(spot, true)}
   </button>
 ))}
 
@@ -1234,7 +1222,7 @@ const handleBetOk = async () => {
       cursor-pointer
     "
   >
-    {renderChipBadge(spot)}
+    {renderChipBadge(spot, true)}
   </button>
 ))}
 
@@ -1260,7 +1248,7 @@ const handleBetOk = async () => {
                     className="relative flex cursor-pointer items-center justify-center"
                   >
 
-                    <span className="text-[20px] font-extrabold tracking-widest text-white [writing-mode:vertical-rl] drop-shadow">
+                    <span className="text-[17px] font-extrabold tracking-widest text-white [writing-mode:vertical-rl] drop-shadow">
                       2 to 1
                     </span>
 
@@ -1292,7 +1280,7 @@ const handleBetOk = async () => {
                       className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                     >
 
-                      <span className="text-[40px] font-serif font-black leading-none tracking-wider text-[#3bfb22] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                      <span className="text-[40px] font-serif font-extrabold leading-none tracking-wider text-[#3bfb22] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
                         {label}
                       </span>
 
@@ -1320,7 +1308,7 @@ const handleBetOk = async () => {
                   className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                 >
 
-                  <span className="text-[35px] font-black leading-none tracking-wide text-white drop-shadow">
+                  <span className="text-[30px] font-bold leading-none tracking-wide text-white drop-shadow">
                     1 to 18
                   </span>
 
@@ -1340,7 +1328,7 @@ const handleBetOk = async () => {
                   className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                 >
 
-                  <span className="text-[35px] font-black leading-none text-white drop-shadow">
+                  <span className="text-[30px] font-bold leading-none text-white drop-shadow">
                     Even
                   </span>
 
@@ -1363,7 +1351,7 @@ const handleBetOk = async () => {
                   <img
                     src={redDiamondImg}
                     alt="Red"
-                    className="h-full w-[98%] object-fill drop-shadow"
+                    className="h-full w-[90%] object-fill drop-shadow"
                   />
 
                   {renderChipBadge(
@@ -1385,7 +1373,7 @@ const handleBetOk = async () => {
                   <img
                     src={blackDiamondImg}
                     alt="Black"
-                    className="h-full w-[98%] object-fill drop-shadow mr-6"
+                    className="h-full w-[90%] object-fill drop-shadow mr-6"
                   />
 
                   {renderChipBadge(
@@ -1404,7 +1392,7 @@ const handleBetOk = async () => {
                   className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                 >
 
-                  <span className="text-[35px] font-black leading-none tracking-wide text-white drop-shadow">
+                  <span className="text-[30px] font-bold leading-none tracking-wide text-white drop-shadow">
                     Odd
                   </span>
 
@@ -1424,7 +1412,7 @@ const handleBetOk = async () => {
                   className="relative flex cursor-pointer items-center justify-center overflow-hidden"
                 >
 
-                  <span className="whitespace-nowrap text-[35px] font-black leading-none tracking-wide text-white drop-shadow">
+                  <span className="whitespace-nowrap text-[30px] font-bold leading-none tracking-wide text-white drop-shadow">
                     19 to 36
                   </span>
 
@@ -1472,7 +1460,7 @@ const handleBetOk = async () => {
                 className="h-[70%] w-full object-fill"
               />
 
-              <span className="absolute  text-[21px] mt-2 font-bold text-white drop-shadow ml-4  ">
+              <span className="absolute  text-[18px] mt-4 font-bold text-white drop-shadow ml-6  ">
                 Total Bet: {totalBet}
               </span>
 
@@ -1490,7 +1478,7 @@ const handleBetOk = async () => {
               className="h-full w-full object-fill"
             />
 
-            <span className="absolute left-[3%] right-[3%] top-1/2 -translate-y-1/2 truncate text-center text-[17px] font-bold tracking-wide text-[#3bfb22] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            <span className="absolute left-[3%] right-[3%] top-[55%] -translate-y-1/2 truncate text-center text-[16px]  tracking-wide text-[#3bfb22] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               {statusMessage}
             </span>
 
@@ -1512,7 +1500,7 @@ const handleBetOk = async () => {
                 className="h-auto w-full object-fill"
               />
 
-              <span className="absolute whitespace-nowrap text-[20px] font-bold text-white drop-shadow">
+              <span className="absolute whitespace-nowrap text-[18px] font-bold text-white drop-shadow">
                 Leave Table
               </span>
 
