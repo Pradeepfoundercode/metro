@@ -4,6 +4,10 @@ import { useAuth } from '../../hooks/useAuth'
 import { useWalletStore } from '../../store/useWalletStore'
 import toast from 'react-hot-toast'
 import { getGameId, createBetPayload } from '../../utils/helper'
+import { playGameTapSound, playBlueWheelSound, stopBlueWheelSound } from '../../utils/sound'
+
+const RED_NUMS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
+const BLACK_NUMS = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35]
 
 import blue36Bg from '../../assets/timer_36/blue_36_bg.png'
 import wheelImg from '../../assets/timer_36/wheel.png'
@@ -22,12 +26,10 @@ import removeBtn from '../../assets/timer_36/remove.png'
 import pleaseSelectChipsImg from '../../assets/timer_36/please_select_chips.png'
 import greaterThan10Rs from '../../assets/timer_36/gr_than_10.png'
 
-
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import NeighbourPopup from '../../components/ui/roulette-mini-timer/NeighbourPopup'
 import GameHistoryPopup from '../../components/ui/roulette-mini-timer/GameHistoryPopup'
 import RouletteGrid from '../../components/ui/roulette-mini-timer/grid'
-
 
 const ITEMS = [
   [35, "l"],
@@ -73,16 +75,33 @@ const MIN_10_BET_SPOTS = [
   'ODD',
 ];
 
+const ROULETTE_ORDER = [
+  0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
+  5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
+];
 
+const getWheelAngle = (num) => {
+  const idx = ROULETTE_ORDER.indexOf(Number(num));
+  if (idx === -1) return 0;
+  return -idx * (360 / 37);
+};
 
 export default function RouletteMiniTimer() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { wallet, deductWallet, addWallet } = useWalletStore()
 
-  // STATE VALUES
   const [selectedChip, setSelectedChip] = useState(2)
   const [timeLeft, setTimeLeft] = useState(40)
+  const [isSpinning, setIsSpinning] = useState(false)
+  const [winningNumber, setWinningNumber] = useState(0)
+  const [boxWheelAngle, setBoxWheelAngle] = useState(0)
+  const [bigWheelAngle, setBigWheelAngle] = useState(0)
+  const [ballAngle, setBallAngle] = useState(0)
+  const pendingWinnerRef = useRef(0)
+  const winnerBadgeTimeoutRef = useRef(null)
+  const [youWon, setYouWon] = useState(0)
+  const [historyList, setHistoryList] = useState(ITEMS)
   const [bets, setBets] = useState({})
   const [betChips, setBetChips] = useState({})
   const [betHistory, setBetHistory] = useState([])
@@ -97,32 +116,125 @@ export default function RouletteMiniTimer() {
   const greaterThan10TimeoutRef = useRef(null)
 
   useEffect(() => {
+    playGameTapSound()
+  }, [])
+
+  useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 0) {
-          // Reset bets for next game round
-          setBets({})
-          setBetChips({})
-          setBetHistory([])
-          setIsBetConfirmed(false)
-          setShowBetAccepted(false)
-          setShowPleaseSelectChips(false)
-          setShowGreaterThan10(false)
-          setTotalBet(0)
-          setShowWaitToComplete(false)
-          return 40
-        }
-        return prev - 1
-      })
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
     }, 1000)
 
     return () => {
       clearInterval(timer)
+      stopBlueWheelSound()
       if (waitTimeoutRef.current) clearTimeout(waitTimeoutRef.current)
       if (selectChipsTimeoutRef.current) clearTimeout(selectChipsTimeoutRef.current)
       if (greaterThan10TimeoutRef.current) clearTimeout(greaterThan10TimeoutRef.current)
+      if (winnerBadgeTimeoutRef.current) clearTimeout(winnerBadgeTimeoutRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (timeLeft === 0) {
+      if (!isSpinning) {
+        setIsSpinning(true)
+        setShowWaitToComplete(false)
+        setShowPleaseSelectChips(false)
+        setShowGreaterThan10(false)
+        playBlueWheelSound()
+        setTimeLeft(10)
+
+        const nextWinner = Math.floor(Math.random() * 37)
+        pendingWinnerRef.current = nextWinner
+        const baseAngle = getWheelAngle(nextWinner)
+
+        setBoxWheelAngle((prev) => {
+          let diff = (baseAngle - (prev % 360)) % 360
+          if (diff <= 0) diff += 360
+          return prev + 360 * 8 + diff
+        })
+
+        setBigWheelAngle((prev) => {
+          let diff = (baseAngle - (prev % 360)) % 360
+          if (diff <= 0) diff += 360
+          return prev + 360 * 8 + diff
+        })
+
+        setBallAngle((prev) => prev - 360 * 14)
+
+        if (winnerBadgeTimeoutRef.current) clearTimeout(winnerBadgeTimeoutRef.current)
+        winnerBadgeTimeoutRef.current = setTimeout(() => {
+          setWinningNumber(nextWinner)
+        }, 8500)
+      } else {
+        stopBlueWheelSound()
+        setIsSpinning(false)
+
+        const newWinner = pendingWinnerRef.current
+        setWinningNumber(newWinner)
+
+        const side = newWinner === 0 ? 'm' : RED_NUMS.includes(newWinner) ? 'r' : 'l'
+        setHistoryList((prev) => [[newWinner, side], ...prev.slice(0, 9)])
+
+        let winPayout = 0
+        if (bets[String(newWinner)]) {
+          winPayout += bets[String(newWinner)] * 36
+        }
+        if (RED_NUMS.includes(newWinner) && bets['red']) {
+          winPayout += bets['red'] * 2
+        }
+        if (BLACK_NUMS.includes(newWinner) && bets['black']) {
+          winPayout += bets['black'] * 2
+        }
+        if (newWinner > 0 && newWinner % 2 === 0 && bets['even']) {
+          winPayout += bets['even'] * 2
+        }
+        if (newWinner % 2 === 1 && bets['odd']) {
+          winPayout += bets['odd'] * 2
+        }
+        if (newWinner >= 1 && newWinner <= 18 && (bets['1-18'] || bets['1_18'])) {
+          winPayout += (bets['1-18'] || bets['1_18']) * 2
+        }
+        if (newWinner >= 19 && newWinner <= 36 && (bets['19-36'] || bets['19_36'])) {
+          winPayout += (bets['19-36'] || bets['19_36']) * 2
+        }
+        if (newWinner >= 1 && newWinner <= 12 && (bets['1st12'] || bets['1ST12'])) {
+          winPayout += (bets['1st12'] || bets['1ST12']) * 3
+        }
+        if (newWinner >= 13 && newWinner <= 24 && (bets['2nd12'] || bets['2ND12'])) {
+          winPayout += (bets['2nd12'] || bets['2ND12']) * 3
+        }
+        if (newWinner >= 25 && newWinner <= 36 && (bets['3rd12'] || bets['3RD12'])) {
+          winPayout += (bets['3rd12'] || bets['3RD12']) * 3
+        }
+        if (newWinner > 0 && newWinner % 3 === 1 && (bets['col-0'] || bets['ROW_1'])) {
+          winPayout += (bets['col-0'] || bets['ROW_1']) * 3
+        }
+        if (newWinner > 0 && newWinner % 3 === 2 && (bets['col-1'] || bets['ROW_2'])) {
+          winPayout += (bets['col-1'] || bets['ROW_2']) * 3
+        }
+        if (newWinner > 0 && newWinner % 3 === 0 && (bets['col-2'] || bets['ROW_3'])) {
+          winPayout += (bets['col-2'] || bets['ROW_3']) * 3
+        }
+
+        if (winPayout > 0) {
+          addWallet(winPayout)
+          setYouWon(winPayout)
+        } else {
+          setYouWon(0)
+        }
+
+        setBets({})
+        setBetChips({})
+        setBetHistory([])
+        setIsBetConfirmed(false)
+        setShowBetAccepted(false)
+        setTotalBet(0)
+
+        setTimeLeft(40)
+      }
+    }
+  }, [timeLeft, isSpinning, bets, addWallet])
 
   const handlePlaceBet = (spot, amount = selectedChip) => {
     if (!selectedChip || !amount) {
@@ -151,9 +263,8 @@ export default function RouletteMiniTimer() {
     }
 
     setShowGreaterThan10(false)
-    if (isBetConfirmed) return
-    // 10 sec ya usse kam rehne par bet lagane ki koshish karne par hi Please Wait show hoga
-    if (timeLeft <= 10) {
+    if (isBetConfirmed || isSpinning) return
+    if (isSpinning || timeLeft <= 10) {
       setShowPleaseSelectChips(false)
       setShowGreaterThan10(false)
       setShowWaitToComplete(true)
@@ -186,7 +297,7 @@ export default function RouletteMiniTimer() {
   }
 
   const handleBetConfirm = () => {
-    if (betHistory.length === 0 || isBetConfirmed) return
+    if (betHistory.length === 0 || isBetConfirmed || isSpinning || timeLeft <= 10) return
 
     const payload = createBetPayload(betHistory, user, '450538')
     if (!payload) return
@@ -206,8 +317,8 @@ export default function RouletteMiniTimer() {
       return
     }
 
-    if (timeLeft <= 10) {
-      toast.error("You can't clear bets in the last 10 seconds")
+    if (isSpinning || timeLeft <= 10) {
+      toast.error("You can't clear bets during spin or last 10 seconds")
       return
     }
 
@@ -234,7 +345,7 @@ export default function RouletteMiniTimer() {
       return
     }
 
-    if (timeLeft <= 10) {
+    if (isSpinning || timeLeft <= 10) {
       setShowPleaseSelectChips(false)
       setShowGreaterThan10(false)
       setShowWaitToComplete(true)
@@ -272,10 +383,8 @@ export default function RouletteMiniTimer() {
     setSelectedChip(null)
   }
 
-
-
-  // Timer Color: 40-21 green, 20-6 yellow, 5-0 red
   const getTimerColor = (time) => {
+    if (isSpinning) return '#ff2222'
     if (time >= 21) return '#2ebd27'
     if (time >= 6) return '#ffe600'
     return '#ff2222'
@@ -289,8 +398,9 @@ export default function RouletteMiniTimer() {
     const cx = 90
     const cy = 75
     const color = getTimerColor(timeLeft)
+    const maxTime = isSpinning ? 10 : 40
 
-    if (timeLeft >= 40) {
+    if (timeLeft >= maxTime) {
       return (
         <ellipse
           cx={cx}
@@ -303,11 +413,11 @@ export default function RouletteMiniTimer() {
       )
     }
 
-    const elapsed = 40 - timeLeft
-    const startAngle = (elapsed / 40) * 2 * Math.PI
+    const elapsed = maxTime - timeLeft
+    const startAngle = (elapsed / maxTime) * 2 * Math.PI
     const startX = cx + rx * Math.sin(startAngle)
     const startY = cy - ry * Math.cos(startAngle)
-    const largeArcFlag = timeLeft > 20 ? 1 : 0
+    const largeArcFlag = timeLeft > (maxTime / 2) ? 1 : 0
 
     const pathData = `M ${cx} ${cy} L ${startX.toFixed(2)} ${startY.toFixed(2)} A ${rx} ${ry} 0 ${largeArcFlag} 1 ${cx} ${cy - ry} Z`
 
@@ -320,62 +430,54 @@ export default function RouletteMiniTimer() {
     )
   }
 
-  // POPUP VISIBILITIES
   const [isLeaveOpen, setIsLeaveOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isNeighbourOpen, setIsNeighbourOpen] = useState(false)
   const [isRulesOpen, setIsRulesOpen] = useState(false)
 
-
   return (
     <div className="game-viewport select-none font-sans">
       <div className="game-stage">
-
         <img
           src={blue36Bg}
           alt="Roulette Table"
           className="pointer-events-none absolute inset-0 z-0 h-full w-full object-fill"
         />
 
-
         <div className="pointer-events-none absolute left-[84px] top-[20px] z-10 flex h-[282px] w-[145px] flex-col p-[12px_14px] text-[18px] font-black leading-none">
-          {ITEMS.map(([n, side], i) => (
+          {historyList.map(([n, side], i) => (
             <div key={i} className={`flex flex-1 items-center ${STYLE[side]}`}>
               {n}
             </div>
           ))}
         </div>
 
-        {/* ==============================================================
-            2. TOP BOX 2: ARCHED WHEEL SLICE (REAL WHEEL.PNG) + STATS
-        ============================================================== */}
         <div className="absolute left-[265px] top-[17px] z-10 flex h-[200px]  w-[417px] flex-col  p-[0px_12px] pointer-events-none">
-          {/* ARCHED ROULETTE WHEEL SLICE USING REAL WHEEL.PNG */}
           <div className="relative flex h-[122px] w-full overflow-hidden rounded-t-[10px] bg-[#ea926b] border-t-2 border-[#ffd700]/70">
-            {/* CONTINUOUSLY SPINNING WHEEL.PNG AT ITS FIXED POSITION */}
-            <div className="absolute left-[200px]  h-[600px] w-[670px] -translate-x-1/2 origin-center pointer-events-none">
+            <div className="absolute left-[200px] h-[600px] w-[600px] -translate-x-1/2 origin-center pointer-events-none">
               <img
                 src={wheelImg}
                 alt="Arched Roulette Wheel"
-                className="h-full w-full object-fill pointer-events-none   origin-center"
+                className="h-full w-full object-fill pointer-events-none origin-center"
+                style={{
+                  transform: `rotate(${boxWheelAngle}deg)`,
+                  transition: isSpinning ? 'transform 8.5s cubic-bezier(0.15, 0.85, 0.25, 1)' : 'none'
+                }}
               />
             </div>
 
-            {/* FIXED BRIGHT WHITE BALL AT CENTER (0 POCKET) - DOES NOT MOVE */}
             <div className="pointer-events-none absolute left-[203px] top-[100px] z-20 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)] " />
           </div>
 
-          {/* PLAY STATS (BLACK BAR) */}
           <div className="flex flex-col justify-center  ">
             <div className="border-t border-b border-yellow1 py- pl-6 text-[21px] font-semibold text-white drop-shadow">
               Current Play : {totalBet}
             </div>
-            <div className="pl-6  text-[21px] font-semibold text-green drop-shadow">
-              You Won 0
+            <div className="pl-6 text-[21px] font-semibold text-green drop-shadow">
+              You Won {youWon}
             </div>
           </div>
         </div>
-
 
         <div className="absolute left-[700px] top-[15px] z-10 flex h-[100px] w-[326px] flex-col leading-[20px] items-center justify-center text-center ">
           <span className="text-[15px] font-bold tracking-wide text-yellow1">
@@ -392,10 +494,8 @@ export default function RouletteMiniTimer() {
           </span>
         </div>
 
-        {/* GAME RULES BUTTON DIRECTLY UNDER BOX 3 */}
         <button
           type="button"
-          // onClick={() => setIsRulesOpen(true)}
           className="absolute left-[720px] top-[115px] z-20 h-[32px] w-[280px] cursor-pointer transition hover:scale-105 active:scale-95"
         >
           <img
@@ -405,31 +505,56 @@ export default function RouletteMiniTimer() {
           />
         </button>
 
-
-        <div className="absolute left-[1058px]  z-10 flex h-[98px] w-[190px] items-center justify-center pointer-events-none">
-          <span className="text-[54px] font-black tracking-wider text-[#ff2b2b] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-            12
+        <div className="absolute left-[1058px] z-10 flex h-[98px] w-[190px] items-center justify-center pointer-events-none">
+          <span 
+            className="text-[54px] font-black tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]"
+            style={{
+              color: winningNumber === 0 
+                ? '#2ebd27' 
+                : RED_NUMS.includes(winningNumber) 
+                ? '#ff2b2b' 
+                : '#ffffff'
+            }}
+          >
+            {winningNumber}
           </span>
         </div>
 
-
         <div className="absolute left-[1580px] top-[115px] z-10 flex h-[500px] w-[630px] -translate-x-1/2 -translate-y-1/2 items-center justify-center pointer-events-none">
-          {/* 3D TILTED WHEEL - ROTATED & SIZED PERFECTLY IN BOWL */}
           <div className="relative flex h-full w-full items-center justify-center [transform:perspective(1000px)_rotateX(66deg)_rotate(39deg)] origin-center">
-            {/* CONTINUOUSLY SPINNING WHEEL (LIKE BEFORE) WITH BALL RESTING ON A NUMBER */}
-            <div className="relative flex h-full w-full items-center justify-center select-none animate-[spin_10s_linear_infinite] origin-center">
-              <img
-                src={wheelImg}
-                alt="Roulette Wheel"
-                className="h-full w-full object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.95)]"
-              />
+            <div 
+              className={`relative flex h-full w-full items-center justify-center select-none origin-center ${
+                !isSpinning ? 'animate-[spin_10s_linear_infinite]' : ''
+              }`}
+            >
+              <div 
+                className="absolute inset-0 flex items-center justify-center origin-center"
+                style={{
+                  transform: `rotate(${bigWheelAngle}deg)`,
+                  transition: isSpinning ? 'transform 8.5s cubic-bezier(0.15, 0.85, 0.25, 1)' : 'none'
+                }}
+              >
+                <img
+                  src={wheelImg}
+                  alt="Roulette Wheel"
+                  className="h-full w-full object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.95)]"
+                />
+              </div>
 
-              {/* LARGER, BRIGHT WHITE BALL RESTING IN NUMBER POCKET */}
-              <div className="pointer-events-none absolute left-1/2 top-[16.5%] z-30 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)] shadow-[0_0_10px_rgba(255,255,255,0.95),0_3px_6px_rgba(0,0,0,0.55),inset_-2px_-2px_3px_rgba(0,0,0,0.15)]" />
+              <div 
+                className="absolute inset-0 flex items-center justify-center origin-center pointer-events-none"
+                style={{
+                  transform: `rotate(${ballAngle}deg)`,
+                  transition: isSpinning ? 'transform 8.5s cubic-bezier(0.1, 0.8, 0.2, 1)' : 'none'
+                }}
+              >
+                <div 
+                  className="pointer-events-none absolute left-1/2 top-[16.5%] z-30 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)] shadow-[0_0_10px_rgba(255,255,255,0.95),0_3px_6px_rgba(0,0,0,0.55),inset_-2px_-2px_3px_rgba(0,0,0,0.15)]" 
+                />
+              </div>
             </div>
           </div>
 
-          {/* GOLDEN DOLLY / SPINDLE (THUDI) STANDING UPRIGHT IN CENTER */}
           <img
             src={thudiImg}
             alt="Dolly"
@@ -437,12 +562,6 @@ export default function RouletteMiniTimer() {
           />
         </div>
 
-
-
-
-        {/* ==============================================================
-            6. MAIN BETTING TABLE (3D PERSPECTIVE FELT GRID)
-        ============================================================== */}
         <div className="pointer-events-none absolute left-[330px] top-[315px] z-10 h-[890px] ">
           <RouletteGrid
             selectedChip={selectedChip}
@@ -454,15 +573,10 @@ export default function RouletteMiniTimer() {
             onBet={handlePlaceBet}
             bets={bets}
             betChips={betChips}
-            isLocked={timeLeft <= 10}
+            isLocked={(timeLeft <= 10 && !isSpinning) || isSpinning}
           />
         </div>
 
-
-
-        {/* ==============================================================
-            CENTER POPUP NOTIFICATIONS / BANNERS (PLEASE WAIT, SELECT CHIPS, > 10, BET ACCEPTED)
-        ============================================================== */}
         {showWaitToComplete && (
           <div className="pointer-events-none absolute left-[960px] top-[480px] z-[60] flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
             <img
@@ -483,9 +597,6 @@ export default function RouletteMiniTimer() {
           </div>
         )}
 
-        {/* ==============================================================
-            GREATER THAN 10RS BANNER (FOR DOZENS/COLUMNS/OUTSIDE WITH CHIP < 10)
-        ============================================================== */}
         {showGreaterThan10 && (
           <div className="pointer-events-none absolute left-[960px] top-[480px] z-[60] flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
             <img
@@ -496,9 +607,6 @@ export default function RouletteMiniTimer() {
           </div>
         )}
 
-        {/* ==============================================================
-            BET ACCEPTED BANNER (APPEARS ON BET CONFIRM)
-        ============================================================== */}
         {showBetAccepted && (
           <div className="pointer-events-none absolute left-[960px] top-[480px] z-40 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
             <img
@@ -509,10 +617,6 @@ export default function RouletteMiniTimer() {
           </div>
         )}
 
-
-        {/* ==============================================================
-            7. BET CONFIRM BUTTON (APPEARS WHEN BETS ARE PLACED)
-        ============================================================== */}
         {betHistory.length > 0 && !isBetConfirmed && (
           <button
             type="button"
@@ -525,31 +629,24 @@ export default function RouletteMiniTimer() {
           </button>
         )}
 
-
-        {/* ==============================================================
-            8. BOTTOM-RIGHT ANALOG TIMER CLOCK (WATCH 40)
-        ============================================================== */}
-        <div className="absolute left-[1785px] top-[760px] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center pointer-events-none">
-          <span className="mb-1 text-[14px] font-black tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-            Time Left:{timeLeft}
-          </span>
-          <div className="relative flex h-[150px] w-[180px] items-center justify-center">
-            <img
-              src={watch40Img}
-              alt="Analog Timer"
-              className="h-full w-full object-fill drop-shadow-[0_8px_16px_rgba(0,0,0,0.9)]"
-            />
-            {/* DYNAMIC COUNTDOWN PIE WEDGE */}
-            <svg className="absolute inset-0 h-full w-full pointer-events-none">
-              {renderTimerWedge()}
-            </svg>
+        {!isSpinning && (
+          <div className="absolute left-[1785px] top-[760px] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center pointer-events-none">
+            <span className="mb-1 text-[14px] font-black tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+              Time Left:{timeLeft}
+            </span>
+            <div className="relative flex h-[150px] w-[180px] items-center justify-center">
+              <img
+                src={watch40Img}
+                alt="Analog Timer"
+                className="h-full w-full object-fill drop-shadow-[0_8px_16px_rgba(0,0,0,0.9)]"
+              />
+              <svg className="absolute inset-0 h-full w-full pointer-events-none">
+                {renderTimerWedge()}
+              </svg>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ==============================================================
-            9. BOTTOM BAR: NEIGHBOUR BET, BALANCE, NAME, HISTORY, LEAVE
-        ============================================================== */}
-        {/* NEIGHBOUR BET BUTTON */}
         <button
           type="button"
           onClick={() => setIsNeighbourOpen(true)}
@@ -562,7 +659,6 @@ export default function RouletteMiniTimer() {
           />
         </button>
 
-        {/* POINT BALANCE BOX */}
         <div className="absolute left-[20px] top-[840px] z-20 flex h-[70px] w-[268px] select-none flex-col">
           <img
             src={buttonBg}
@@ -577,7 +673,6 @@ export default function RouletteMiniTimer() {
           </div>
         </div>
 
-        {/* NAME BOX */}
         <div className="absolute left-[302px] top-[840px] z-20 flex h-[70px] w-[268px] select-none flex-col">
           <img
             src={buttonBg}
@@ -592,7 +687,6 @@ export default function RouletteMiniTimer() {
           </div>
         </div>
 
-        {/* REMOVE BUTTON (DESELECT CHIP) */}
         <button
           type="button"
           onClick={handleRemoveChip}
@@ -605,7 +699,6 @@ export default function RouletteMiniTimer() {
           />
         </button>
 
-        {/* DOUBLE BUTTON */}
         <button
           type="button"
           onClick={handleDoubleBets}
@@ -618,7 +711,6 @@ export default function RouletteMiniTimer() {
           />
         </button>
 
-        {/* CLEAR BET BUTTON */}
         <button
           type="button"
           onClick={handleClearBets}
@@ -631,7 +723,6 @@ export default function RouletteMiniTimer() {
           />
         </button>
 
-        {/* GAME HISTORY BUTTON */}
         <button
           type="button"
           onClick={() => setIsHistoryOpen(true)}
@@ -644,7 +735,6 @@ export default function RouletteMiniTimer() {
           />
         </button>
 
-        {/* LEAVE TABLE BUTTON */}
         <button
           type="button"
           onClick={() => setIsLeaveOpen(true)}
@@ -657,14 +747,11 @@ export default function RouletteMiniTimer() {
           />
         </button>
 
-        {/* ==============================================================
-            MODALS / POPUPS
-        ============================================================== */}
-        {/* LEAVE TABLE CONFIRMATION POPUP */}
         <ConfirmDialog
           isOpen={isLeaveOpen}
           onClose={() => setIsLeaveOpen(false)}
           onConfirm={() => {
+            stopBlueWheelSound()
             setIsLeaveOpen(false)
             navigate('/dashboard')
           }}
@@ -675,7 +762,6 @@ export default function RouletteMiniTimer() {
           }
         />
 
-        {/* NEIGHBOUR BET POPUP */}
         <NeighbourPopup
           isOpen={isNeighbourOpen}
           onClose={() => setIsNeighbourOpen(false)}
@@ -683,12 +769,9 @@ export default function RouletteMiniTimer() {
           bets={bets}
           betChips={betChips}
           selectedChip={selectedChip}
-          isLocked={timeLeft <= 10}
+          isLocked={(timeLeft <= 10 && !isSpinning) || isSpinning}
         />
 
-
-
-        {/* GAME HISTORY POPUP */}
         <GameHistoryPopup
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}

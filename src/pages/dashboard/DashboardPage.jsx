@@ -11,6 +11,7 @@ import cancelBtn from '../../assets/button/cancel.png'
 import { useAuth } from '../../hooks/useAuth'
 import { useWalletStore } from '../../store/useWalletStore'
 import { useFullscreenLandscape } from '../../hooks/useFullscreen'
+import { playGameTapSound } from '../../utils/sound'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -27,16 +28,19 @@ export default function DashboardPage() {
   }
 
   const handleFunRoulette = async () => {
+    playGameTapSound()
     await enterFullscreen()
     navigate('/fun-roulette')
   }
 
   const handleRouletteMiniTimer = async () => {
+    playGameTapSound()
     await enterFullscreen()
     navigate('/roulette-mini-timer')
   }
 
   const handleFunTarget = async () => {
+    playGameTapSound()
     await enterFullscreen()
     navigate('/fun-target')
   }

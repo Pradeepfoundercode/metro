@@ -49,6 +49,7 @@ import {
 } from '../../constants/funRouletteData'
 import { placeFunRouletteBet } from '../../services/funroulette.services'
 import { getGameId, createBetPayload } from '../../utils/helper'
+import { playGameTapSound, playTickSound, stopTickSound } from '../../utils/sound'
 
 
 const MIN_10_BET_SPOTS = [
@@ -119,6 +120,10 @@ export default function FunRoulette() {
     (total, amount) => total + amount,
     0
   )
+
+  useEffect(() => {
+    playGameTapSound()
+  }, [])
 
  const handlePlaceBet = (spot) => {
   if (isLocked || !selectedChip) {
@@ -307,37 +312,44 @@ export default function FunRoulette() {
 
 
 
-  const isPopupOpenRef = useRef(isPopupOpen)
-  useEffect(() => {
-    isPopupOpenRef.current = isPopupOpen
-  }, [isPopupOpen])
-
+  // 1. Countdown interval decrements timeLeft each second
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 0) {
-          if (!isPopupOpenRef.current) {
-            // Normal countdown reached 0 -> Open popup & start 10s countdown
-            setIsPopupOpen(true)
-            setBets({})
-            return 10
-          } else {
-            // Popup 10s countdown reached 0 -> Close popup & resume from base round time
-            setIsPopupOpen(false)
-            return initialTimeRef.current
-          }
-        }
-
-        return prev - 1
-      })
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
     }, 1000)
 
-    return () => clearInterval(timer)
+    return () => {
+      clearInterval(timer)
+      stopTickSound()
+    }
   }, [])
+
+  // 2. Play tick sound only during the game timer (muted when wheel popup is open)
+  useEffect(() => {
+    if (!isPopupOpen && timeLeft > 0) {
+      playTickSound()
+    } else {
+      stopTickSound()
+    }
+  }, [timeLeft, isPopupOpen])
+
+  // 3. When timeLeft reaches 0, cleanly transition to/from the 10s wheel popup
+  useEffect(() => {
+    if (timeLeft === 0) {
+      if (!isPopupOpen) {
+        setIsPopupOpen(true)
+        setBets({})
+        setTimeLeft(10)
+      } else {
+        setIsPopupOpen(false)
+        setTimeLeft(initialTimeRef.current || 25)
+      }
+    }
+  }, [timeLeft, isPopupOpen])
 
   const handleClosePopup = () => {
     setIsPopupOpen(false)
-    setTimeLeft(initialTimeRef.current)
+    setTimeLeft(initialTimeRef.current || 25)
   }
 
 

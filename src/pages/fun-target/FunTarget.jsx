@@ -5,6 +5,7 @@ import { useWalletStore } from '../../store/useWalletStore'
 import { placeFunTargetBet } from '../../services/funtarget.services'
 import GameHistoryPopup from '../../components/ui/GameHistoryPopup'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import { playGameTapSound, playMoveChakraSound, stopMoveChakraSound } from '../../utils/sound'
 
 import homeBgFun from '../../assets/fun_target/home_bg_fun.png'
 import scoreWord from '../../assets/fun_target/score_word.png'
@@ -167,17 +168,19 @@ export default function FunTarget() {
 
   const triggerSpin = () => {
     setIsSpinning(true)
+    playMoveChakraSound()
 
     const nextWinner = Math.floor(Math.random() * 10)
 
     const targetAngle = (360 - nextWinner * 36) % 360
-    const spins = 6
+    const spins = 10
     const currentBase = Math.floor(rotationRef.current / 360) * 360
     const nextRotation = currentBase + spins * 360 + targetAngle
 
     setRotation(nextRotation)
 
     spinTimeoutRef.current = setTimeout(() => {
+      stopMoveChakraSound()
       setIsSpinning(false)
       setWinnerNumber(nextWinner)
       setLast10Data((prev) => [nextWinner, ...prev.slice(0, 9)])
@@ -191,9 +194,9 @@ export default function FunTarget() {
       })
 
       setIsBetAccepted(false)
-timerEndRef.current = Date.now() + 10000
-setTimeLeft(10)
-    }, 5000)
+      timerEndRef.current = Date.now() + 10000
+      setTimeLeft(10)
+    }, 10000)
   }
 
  useEffect(() => {
@@ -222,6 +225,14 @@ setTimeLeft(10)
     clearInterval(timer)
   }
 }, [isSpinning])
+
+  useEffect(() => {
+    playGameTapSound()
+    return () => {
+      stopMoveChakraSound()
+      if (spinTimeoutRef.current) clearTimeout(spinTimeoutRef.current)
+    }
+  }, [])
 
   return (
     <div className="game-viewport select-none font-sans">
@@ -295,7 +306,7 @@ setTimeLeft(10)
                 style={{
                   transform: `rotate(${rotation}deg)`,
                   transition: isSpinning
-                    ? 'transform 5s cubic-bezier(0.15, 0.85, 0.25, 1)'
+                    ? 'transform 10s cubic-bezier(0.15, 0.85, 0.25, 1)'
                     : 'none',
                 }}
               >
@@ -586,6 +597,7 @@ setTimeLeft(10)
           isOpen={isLeaveModalOpen}
           onClose={() => setIsLeaveModalOpen(false)}
           onConfirm={() => {
+            stopMoveChakraSound()
             setIsLeaveModalOpen(false)
             if (!isBetAccepted && totalBet > 0) {
               addWallet(totalBet)
