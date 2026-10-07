@@ -1196,7 +1196,7 @@ function RouletteMiniTimer() {
           type="button"
           onClick={() => {
             playGameTapSound()
-            setIsRulesOpen(true)
+            // setIsRulesOpen(true)
           }}
           className="absolute left-[44.8%] top-[14.6%] z-30 flex h-[32px] w-[290px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
        
