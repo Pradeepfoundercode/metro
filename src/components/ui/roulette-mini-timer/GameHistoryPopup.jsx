@@ -125,14 +125,7 @@ export default function GameHistoryPopup({
             })}
           </div>
 
-          {/* LAST CALL BANNER */}
-          <div className="mt-4 flex items-center justify-center">
-            <img
-              src={lastCallImg}
-              alt="LAST CALL"
-              className="h-[46px] w-[340px] object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
-            />
-          </div>
+          
 
           <div className="flex-1" />
         </div>
