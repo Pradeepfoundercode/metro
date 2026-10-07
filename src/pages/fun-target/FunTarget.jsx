@@ -5,7 +5,7 @@ import { useWalletStore } from '../../store/useWalletStore'
 import { placeFunTargetBet } from '../../services/funtarget.service'
 import GameHistoryPopup from '../../components/common/GameHistoryPopup'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
-import { playGameTapSound, playMoveChakraSound, stopMoveChakraSound, playPlaceChipSound  } from '../../utils/sound'
+import { playGameTapSound, playMoveChakraSound, stopMoveChakraSound, playPlaceChipSound } from '../../utils/sound'
 
 import homeBgFun from '../../assets/fun_target/home_bg_fun.png'
 import scoreWord from '../../assets/fun_target/score_word.png'
@@ -142,7 +142,7 @@ export default function FunTarget() {
     const nextWinner = Math.floor(Math.random() * 10)
 
     const targetAngle = (360 - nextWinner * 36) % 360
-    const spins = 10
+    const spins = 28
     const currentBase = Math.floor(rotationRef.current / 360) * 360
     const nextRotation = currentBase + spins * 360 + targetAngle
 
@@ -166,35 +166,35 @@ export default function FunTarget() {
       setIsBetAccepted(false)
       timerEndRef.current = Date.now() + 40000
       setTimeLeft(40)
-    }, 10000)
+    }, 11000)
   }
 
- useEffect(() => {
-  if (isSpinning) return
+  useEffect(() => {
+    if (isSpinning) return
 
-  if (!timerEndRef.current) {
-    timerEndRef.current = Date.now() + 40000
-  }
-
-  const timer = setInterval(() => {
-    const remaining = Math.max(
-      0,
-      Math.ceil((timerEndRef.current - Date.now()) / 1000)
-    )
-
-    setTimeLeft(remaining)
-
-    if (remaining <= 0) {
-      clearInterval(timer)
-      timerEndRef.current = null
-      triggerSpin()
+    if (!timerEndRef.current) {
+      timerEndRef.current = Date.now() + 40000
     }
-  }, 250)
 
-  return () => {
-    clearInterval(timer)
-  }
-}, [isSpinning])
+    const timer = setInterval(() => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((timerEndRef.current - Date.now()) / 1000)
+      )
+
+      setTimeLeft(remaining)
+
+      if (remaining <= 0) {
+        clearInterval(timer)
+        timerEndRef.current = null
+        triggerSpin()
+      }
+    }, 250)
+
+    return () => {
+      clearInterval(timer)
+    }
+  }, [isSpinning])
 
   useEffect(() => {
     playGameTapSound()
@@ -292,17 +292,15 @@ export default function FunTarget() {
               <img
                 src={mainGif}
                 alt="Center Coins"
-                className={`absolute inset-0 h-full w-full select-none object-fill will-change-transform ${
-                  isSpinning ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute inset-0 h-full w-full select-none object-fill will-change-transform ${isSpinning ? 'opacity-100' : 'opacity-0'
+                  }`}
                 style={{ transform: 'translateZ(0)' }}
               />
               <img
                 src={staticCoin}
                 alt="Center Coins"
-                className={`absolute inset-0 h-full w-full select-none object-fill ${
-                  isSpinning ? 'opacity-0' : 'opacity-100'
-                }`}
+                className={`absolute inset-0 h-full w-full select-none object-fill ${isSpinning ? 'opacity-0' : 'opacity-100'
+                  }`}
                 style={{ transform: 'translateZ(0)' }}
               />
             </div>
@@ -315,11 +313,10 @@ export default function FunTarget() {
               key={chip.value}
               type="button"
               onClick={() => setSelectedChip(chip.value)}
-              className={`relative z-10 h-[55px] w-[75px] cursor-pointer transition-transform duration-150 ${
-                selectedChip === chip.value
+              className={`relative z-10 h-[55px] w-[75px] cursor-pointer transition-transform duration-150 ${selectedChip === chip.value
                   ? 'scale-115 drop-shadow-[0_0_8px_#ffd700]'
                   : 'hover:scale-105 active:scale-95'
-              }`}
+                }`}
             >
               <img
                 src={chip.img}
@@ -336,11 +333,10 @@ export default function FunTarget() {
               key={chip.value}
               type="button"
               onClick={() => setSelectedChip(chip.value)}
-              className={`relative z-10 h-[57px] w-[75px] cursor-pointer transition-transform duration-150 ${
-                selectedChip === chip.value
+              className={`relative z-10 h-[57px] w-[75px] cursor-pointer transition-transform duration-150 ${selectedChip === chip.value
                   ? 'scale-115 drop-shadow-[0_0_8px_#ffd700]'
                   : 'hover:scale-105 active:scale-95'
-              }`}
+                }`}
             >
               <img
                 src={chip.img}
@@ -415,11 +411,10 @@ export default function FunTarget() {
               type="button"
               onClick={handleCancelBet}
               disabled={isBettingClosed || isSubmittingBet}
-              className={`relative flex h-[40px] w-[260px] items-center justify-center transition ${
-                isBettingClosed || isSubmittingBet
+              className={`relative flex h-[40px] w-[260px] items-center justify-center transition ${isBettingClosed || isSubmittingBet
                   ? 'cursor-not-allowed opacity-60'
                   : 'cursor-pointer hover:brightness-110 active:scale-95'
-              }`}
+                }`}
             >
               <img
                 src={cancelBetBtn}
@@ -449,11 +444,10 @@ export default function FunTarget() {
               type="button"
               onClick={handleBetOk}
               disabled={isBettingClosed || isSubmittingBet}
-              className={`relative flex h-[38px] w-[190px] items-center justify-center transition ${
-                isBettingClosed || isSubmittingBet
+              className={`relative flex h-[38px] w-[190px] items-center justify-center transition ${isBettingClosed || isSubmittingBet
                   ? 'cursor-not-allowed opacity-60'
                   : 'cursor-pointer hover:brightness-110 active:scale-95'
-              }`}
+                }`}
             >
               <img
                 src={betOkBtn}
@@ -489,11 +483,10 @@ export default function FunTarget() {
                   type="button"
                   onClick={() => handleBet(num)}
                   disabled={isBettingClosed}
-                  className={`group relative flex h-[76px] w-[112px] items-center justify-center transition-transform ${
-                    isBettingClosed
+                  className={`group relative flex h-[76px] w-[112px] items-center justify-center transition-transform ${isBettingClosed
                       ? 'cursor-not-allowed'
                       : 'cursor-pointer hover:scale-105 active:scale-95'
-                  }`}
+                    }`}
                 >
                   <img
                     src={hasBet ? greenBtn : orangeBtn}
@@ -531,8 +524,8 @@ export default function FunTarget() {
               {isBetAccepted
                 ? 'Bets Accepted Successfully'
                 : timeLeft <= 5 || isSpinning
-                ? 'Bets Time is Over'
-                : 'Please Bet to Start Game . Minimum Bet=5'}
+                  ? 'Bets Time is Over'
+                  : 'Please Bet to Start Game . Minimum Bet=5'}
             </span>
           </div>
 

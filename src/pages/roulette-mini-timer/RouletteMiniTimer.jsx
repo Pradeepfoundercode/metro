@@ -588,13 +588,11 @@ function RouletteMiniTimer() {
       return
     }
 
-    const requiresMinimum10 =
+    const isOutsideBet =
+      OUTSIDE_BETS.some((item) => item.key === spot) ||
       MIN_10_BET_SPOTS.includes(spot)
 
-    if (
-      requiresMinimum10 &&
-      amount < 10
-    ) {
+    if (isOutsideBet && amount < 10) {
       setShowPleaseSelectChips(false)
 
       setShowWaitToComplete(false)
@@ -1201,7 +1199,7 @@ function RouletteMiniTimer() {
             setIsRulesOpen(true)
           }}
           className="absolute left-[44.8%] top-[14.6%] z-30 flex h-[32px] w-[290px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
-          title="Game Rules"
+       
         >
           <img
             src={rulesBtn}
@@ -1218,7 +1216,7 @@ function RouletteMiniTimer() {
             setIsNeighbourOpen(true)
           }}
           className="absolute left-[6%] top-[86.5%] z-30 flex h-[75px] w-[190px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
-          title="Neighbour Bet"
+      
         >
           <img
             src={neighbourBtn}
@@ -1235,7 +1233,7 @@ function RouletteMiniTimer() {
             setIsHistoryOpen(true)
           }}
           className="absolute left-[79.6%] top-[96.1%] z-30 flex h-[74px] w-[212px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
-          title="Game History"
+   
         >
           <img
             src={gameHistoryBtn}
@@ -1252,7 +1250,7 @@ function RouletteMiniTimer() {
             setIsLeaveModalOpen(true)
           }}
           className="absolute left-[92.6%] top-[98%] z-30 flex h-[40px] w-[250px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
-          title="Leave Table"
+         
         >
           <img
             src={leaveTableBtn}
@@ -1286,7 +1284,7 @@ function RouletteMiniTimer() {
                   'translate(-55%, -57%) rotateX(59deg)',
               }}
               className="z-40 flex cursor-pointer items-center justify-center rounded-full bg-transparent focus:outline-none"
-              title={`Select ${chip.label} Chip`}
+           
             >
               {isSelected && (
                 <span
@@ -1423,8 +1421,8 @@ function RouletteMiniTimer() {
                 transformOrigin:
                   'center center',
               }}
-              className="group z-20 flex scale-105 cursor-pointer items-center justify-center rounded-md transition active:scale-95 focus:outline-none"
-              title={`Bet on ${item.label}`}
+              className="group z-20 flex scale-105 cursor-pointer items-center justify-center rounded-md "
+              
             >
               <span className="pointer-events-none absolute inset-0 rounded-md  " />
 
@@ -1474,7 +1472,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-24 flex cursor-pointer items-center justify-center rounded-full "
-              title={`Bet on Split ${item.key}`}
+            
             >
               <span className="pointer-events-none absolute inset-0 rounded-full " />
 
@@ -1525,7 +1523,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-26 flex cursor-pointer items-center justify-center rounded-md "
-              title={`Bet on Street ${item.key}`}
+            
             >
               <span className="pointer-events-none absolute inset-0 rounded-md " />
 
@@ -1576,7 +1574,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-28 flex cursor-pointer items-center justify-center rounded-full "
-              title={`Bet on Line ${item.key}`}
+             
             >
               <span className="pointer-events-none absolute inset-0 rounded-full  " />
 
@@ -1627,7 +1625,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-30 flex cursor-pointer items-center justify-center rounded-full "
-              title={`Bet on Corner ${item.key}`}
+         
             >
               <span className="pointer-events-none absolute inset-0 rounded-full  " />
 
@@ -1708,8 +1706,8 @@ function RouletteMiniTimer() {
           <button
             type="button"
             onClick={handleBetConfirm}
-            className="absolute left-[1570px] top-[640px] z-30 flex h-[65px] w-[256px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
-            title="BET CONFIRM"
+            className="absolute left-[1570px] top-[640px] z-30 flex h-[65px] w-[256px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center "
+            
           >
             <img
               src={betConBtn}
@@ -1722,7 +1720,7 @@ function RouletteMiniTimer() {
         {betHistory.length > 0 && isBetConfirmed && (
           <div
             className="absolute left-[1570px] top-[640px] z-30 flex h-[65px] w-[256px] -translate-x-1/2 -translate-y-1/2 items-center justify-center pointer-events-none"
-            title="BET ACCEPTED"
+           
           >
             <img
               src={betAccBtn}
@@ -1759,7 +1757,7 @@ function RouletteMiniTimer() {
             type="button"
             onClick={handleRepeatBets}
             className="absolute left-[1170px] top-[838px] z-20 flex h-[74px] w-[210px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
-            title="REPEAT"
+           
           >
             <img
               src={repeatBtn}

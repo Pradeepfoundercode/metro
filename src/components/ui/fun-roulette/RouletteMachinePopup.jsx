@@ -42,16 +42,30 @@ const pocketOffset =
   POCKET_ANGLE / 2 +
   WHEEL_OFFSET
 
-    const totalWheelSpins = 4
-    const totalBallSpins = 8
+    const totalWheelSpins = 6
+    const totalBallSpins = 13
     const spinDuration = 7600
     const startTime = performance.now()
+
+    // Fast spin initially, followed by a smoother, gentle deceleration into the pocket
+    const p0 = 0.52
+    const v0 = 2 / (1 + p0)
+
+    const calcEase = (p) => {
+      if (p <= 0) return 0
+      if (p >= 1) return 1
+      if (p < p0) {
+        return v0 * p
+      }
+      const t = (p - p0) / (1 - p0)
+      return v0 * p0 + (1 - v0 * p0) * (1 - Math.pow(1 - t, 2.2))
+    }
 
     const animate = (currentTime) => {
       const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / spinDuration, 1)
 
-      const ease = 1 - Math.pow(1 - progress, 3.5)
+      const ease = calcEase(progress)
 
       const currentWheelAngle = ease * (totalWheelSpins * 360)
       setWheelAngle(currentWheelAngle)
@@ -60,17 +74,17 @@ const pocketOffset =
       setBallAngle(currentBallAngle)
 
       if (progress < 1) {
-  animRef.current = requestAnimationFrame(animate)
-} else {
-  setIsStopped(true)
+        animRef.current = requestAnimationFrame(animate)
+      } else {
+        setIsStopped(true)
 
-  speak(`Winning number is ${winnerNumber}`)
+        speak(`Winning number is ${winnerNumber}`)
 
-  onResult?.({
-    number: winnerNumber,
-    index: randomIdx,
-  })
-}
+        onResult?.({
+          number: winnerNumber,
+          index: randomIdx,
+        })
+      }
     }
 
     animRef.current = requestAnimationFrame(animate)
