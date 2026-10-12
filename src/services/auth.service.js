@@ -36,3 +36,18 @@ export const senderTransferList = async (userId) => {
 
   return res.data
 }
+
+export const transferAmount = async (payload) => {
+  const res = await API.post('/transferAmount', payload)
+  return res.data
+}
+
+export const cancelTransferBySender = async (payload) => {
+  const res = await API.post('/cancelTransferBySender', payload)
+  return res.data
+}
+
+export const recieveRejectAmount = async (payload) => {
+  const res = await API.post('/recieve_reject_amount', payload)
+  return res.data
+}

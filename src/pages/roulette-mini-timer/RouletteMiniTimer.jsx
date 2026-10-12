@@ -1282,7 +1282,7 @@ function RouletteMiniTimer() {
         </div>
 
         {/* CURRENT PLAY + YOU WON */}
-        <div className="pointer-events-none absolute left-[262px] top-[15px] z-10 flex h-[182px] w-[422px] flex-col p-[0px_12px]">
+        <div className="pointer-events-none absolute left-[262px] top-[15px] z-10 flex h-[182px] w-[424px] flex-col p-[0px_12px]">
           <div className="relative flex h-[122px] w-full overflow-hidden rounded-t-[10px]  bg-[#ea926b]">
             <div className="absolute left-[201px] h-[600px] w-[600px] -translate-x-1/2 origin-center">
               <img
@@ -1298,7 +1298,7 @@ function RouletteMiniTimer() {
               />
             </div>
 
-            <div className="pointer-events-none absolute left-[204px] top-[100px] z-20 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)]" />
+            <div className="pointer-events-none absolute left-[203px] top-[100px] z-20 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)]" />
           </div>
 
           <div className="flex flex-col justify-center">

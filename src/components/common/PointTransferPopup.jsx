@@ -1,23 +1,88 @@
 import React, { useState } from 'react'
+import toast from 'react-hot-toast'
 import closeBg from '../../assets/bg/close_bg.png'
 import { playGameTapSound } from '../../utils/sound'
+import { useAuth } from '../../hooks/useAuth'
+import { transferAmount } from '../../services/auth.service'
 
 export default function PointTransferPopup({ isOpen, onClose }) {
   const [toUsername, setToUsername] = useState('')
   const [amount, setAmount] = useState('')
   const [pin, setPin] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const { user, userProfile } = useAuth()
 
   if (!isOpen) return null
 
   const handleClose = () => {
     playGameTapSound()
+    setToUsername('')
+    setAmount('')
+    setPin('')
     onClose()
   }
 
-  const handleTransfer = (e) => {
-    e.preventDefault()
+  const handleTransfer = async (e) => {
+    e?.preventDefault?.()
     playGameTapSound()
 
+    const currentUserId = user?.id || localStorage.getItem('userId')
+
+    if (!currentUserId) {
+      toast.error('User not logged in')
+      return
+    }
+
+    if (!toUsername.trim()) {
+      toast.error('Please enter  username')
+      return
+    }
+
+    if (!amount.trim() || Number(amount) <= 0) {
+      toast.error('Please enter valid amount')
+      return
+    }
+
+    if (!pin.trim()) {
+      toast.error('Please enter pin/password')
+      return
+    }
+
+    const payload = {
+      user_id: String(currentUserId),
+      receiver_username: toUsername.trim(),
+      amount: String(amount).trim(),
+      password: String(pin).trim(),
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await transferAmount(payload)
+
+      if (response?.status || response?.success) {
+        toast.success(response?.message )
+        setToUsername('')
+        setAmount('')
+        setPin('')
+        if (user?.id) {
+          userProfile?.(user.id)
+        }
+        onClose()
+      } else {
+        toast.error(response?.message)
+      }
+    } catch (error) {
+      console.error('Transfer amount error:', error)
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        'Transfer failed'
+      toast.error(errorMsg)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -53,8 +118,8 @@ export default function PointTransferPopup({ isOpen, onClose }) {
                 type="text"
                 placeholder="Enter Username"
                 value={toUsername}
-                onChange={(e) => setToUsername(e.target.value)}
-                className="w-full border-none bg-transparent p-0 text-[18px] font-medium text-white placeholder-zinc-500 outline-none leading-tight"
+                onChange={(e) => setToUsername(e.target.value.toUpperCase())}
+                className="w-full border-none bg-transparent p-0 text-[18px] font-medium text-white placeholder-zinc-500 outline-none leading-tight uppercase"
               />
             </label>
           </div>
@@ -67,9 +132,10 @@ export default function PointTransferPopup({ isOpen, onClose }) {
             <label className="flex h-[72px] w-[400px] cursor-text flex-col justify-start rounded-[10px] border border-white/50 bg-transparent px-4 pt-2 transition focus-within:border-white">
               <input
                 type="text"
+                inputMode="numeric"
                 placeholder="Enter Amount"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
                 className="w-full border-none bg-transparent p-0 text-[18px] font-medium text-white placeholder-zinc-500 outline-none leading-tight"
               />
             </label>
@@ -96,17 +162,18 @@ export default function PointTransferPopup({ isOpen, onClose }) {
             <button
               type="button"
               onClick={handleClose}
-              className="flex h-[36px] min-w-[100px] cursor-pointer items-center justify-center rounded-full bg-[#ef4444]  text-[15px] font-bold text-white shadow-md transition hover:brightness-110 active:scale-95"
+              disabled={isLoading}
+              className="flex h-[36px] min-w-[100px] cursor-pointer items-center justify-center rounded-full bg-[#ef4444]  text-[15px] font-bold text-white shadow-md transition hover:brightness-110 active:scale-95 disabled:opacity-50"
             >
               Close
             </button>
 
             <button
-              type="button"
-              onClick={handleTransfer}
-              className="flex h-[36px] min-w-[105px] cursor-pointer items-center justify-center rounded-full bg-[#22c55e] text-[15px] font-bold text-white shadow-md transition hover:brightness-110 active:scale-95"
+              type="submit"
+              disabled={isLoading}
+              className="flex h-[36px] min-w-[105px] cursor-pointer items-center justify-center rounded-full bg-[#22c55e] text-[15px] font-bold text-white shadow-md transition hover:brightness-110 active:scale-95 disabled:opacity-50"
             >
-              Transfer
+              {isLoading ? 'Sending...' : 'Transfer'}
             </button>
           </div>
         </form>
