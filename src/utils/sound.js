@@ -4,6 +4,7 @@ import rouletteWheelNewSoundFile from '../assets/sounds/roulette_wheel_new.mp3'
 import blueWheelSoundFile from '../assets/sounds/blue_wheel.mp3'
 import coinSplash from '../assets/sounds/coin_splash.mp3'
 import placeChipSound from '../assets/sounds/placechip.mp3'
+import moveChakraSoundFile from '../assets/sounds/movechakra.mp3'
 
 let tapAudio = null
 let lastPlayTime = 0
@@ -20,7 +21,7 @@ export const playGameTapSound = () => {
     tapAudio.play().catch(() => {})
     lastPlayTime = now
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }
 
@@ -34,7 +35,7 @@ export const playTickSound = () => {
     tickAudio.currentTime = 0
     tickAudio.play().catch(() => {})
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }
 
@@ -45,7 +46,7 @@ export const stopTickSound = () => {
       tickAudio.currentTime = 0
     }
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }
 
@@ -59,7 +60,7 @@ export const playRouletteWheelSound = () => {
     rouletteWheelAudio.currentTime = 0
     rouletteWheelAudio.play().catch(() => {})
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }
 
@@ -70,7 +71,7 @@ export const stopRouletteWheelSound = () => {
       rouletteWheelAudio.currentTime = 0
     }
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }
 
@@ -84,7 +85,7 @@ export const playBlueWheelSound = () => {
     blueWheelAudio.currentTime = 0
     blueWheelAudio.play().catch(() => {})
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }
 
@@ -95,11 +96,11 @@ export const stopBlueWheelSound = () => {
       blueWheelAudio.currentTime = 0
     }
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }
 
-import moveChakraSoundFile from '../assets/sounds/movechakra.mp3'
+
 
 let moveChakraAudio = null
 
@@ -111,7 +112,7 @@ export const playMoveChakraSound = () => {
     moveChakraAudio.currentTime = 0
     moveChakraAudio.play().catch(() => {})
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+  console.log(e)
   }
 }
 
@@ -122,7 +123,7 @@ export const stopMoveChakraSound = () => {
       moveChakraAudio.currentTime = 0
     }
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }
 
@@ -148,6 +149,6 @@ export const playPlaceChipSound = () => {
     placeChipAudio.currentTime = 0
     placeChipAudio.play().catch(() => {})
   } catch (e) {
-    // Autoplay restrictions or unsupported audio
+    console.log(e)
   }
 }

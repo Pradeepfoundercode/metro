@@ -1267,7 +1267,7 @@ function RouletteMiniTimer() {
 
 
         {/* HISTORY */}
-        <div className="pointer-events-none absolute rounded-lg left-[84px] top-[19px] bg-black z-10 flex h-[282px] w-[145px] flex-col p-[12px_14px] text-[18px] font-black leading-none">
+        <div className="pointer-events-none absolute rounded-lg left-[84px] top-[16px] bg-black z-10 flex h-[282px] w-[145px] flex-col p-[12px_14px] text-[18px] font-black leading-none">
           {historyList.map(
             ([number, side], index) => (
               <div
@@ -1282,7 +1282,7 @@ function RouletteMiniTimer() {
         </div>
 
         {/* CURRENT PLAY + YOU WON */}
-        <div className="pointer-events-none absolute left-[262px] top-[20px] z-10 flex h-[182px] w-[422px] flex-col p-[0px_12px]">
+        <div className="pointer-events-none absolute left-[262px] top-[15px] z-10 flex h-[182px] w-[422px] flex-col p-[0px_12px]">
           <div className="relative flex h-[122px] w-full overflow-hidden rounded-t-[10px]  bg-[#ea926b]">
             <div className="absolute left-[201px] h-[600px] w-[600px] -translate-x-1/2 origin-center">
               <img
@@ -1298,7 +1298,7 @@ function RouletteMiniTimer() {
               />
             </div>
 
-            <div className="pointer-events-none absolute left-[203px] top-[100px] z-20 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)]" />
+            <div className="pointer-events-none absolute left-[204px] top-[100px] z-20 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)]" />
           </div>
 
           <div className="flex flex-col justify-center">
@@ -1313,7 +1313,7 @@ function RouletteMiniTimer() {
         </div>
 
         {/* MIN / MAX PLAY */}
-        <div className="pointer-events-none absolute bg-black rounded-lg left-[706px] top-[21px] z-10 flex h-[88px] w-[322px] flex-col items-center justify-center text-center leading-[20px]">
+        <div className="pointer-events-none absolute bg-black rounded-lg left-[706px] top-[18px] z-10 flex h-[88px] w-[322px] flex-col items-center justify-center text-center leading-[20px]">
           <span className="text-[17px] font-semibold tracking-wide text-yellow-300">
             MIN- Play
           </span>
@@ -1332,7 +1332,7 @@ function RouletteMiniTimer() {
         </div>
 
         {/* WINNING NUMBER */}
-        <div className="pointer-events-none absolute left-[1060px] rounded-lg top-[22px] bg-black z-10 flex h-[68px] w-[186px] items-center justify-center">
+        <div className="pointer-events-none absolute left-[1060px] rounded-lg top-[17px] bg-black z-10 flex h-[68px] w-[186px] items-center justify-center">
           <span
             className="text-[54px] font-bold tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]"
             style={{
@@ -1351,7 +1351,7 @@ function RouletteMiniTimer() {
         </div>
 
         {/* MAIN WHEEL */}
-        <div className="pointer-events-none absolute left-[1590px] top-[116px] z-10 flex h-[515px] w-[645px] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+        <div className="pointer-events-none absolute left-[1589px] top-[113px] z-10 flex h-[515px] w-[645px] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
           <div className="relative flex h-full w-full origin-center items-center justify-center [transform:perspective(1000px)_rotateX(66deg)_rotate(39deg)]">
             <div className="relative flex h-full w-full items-center justify-center origin-center">
               <div
@@ -1429,7 +1429,7 @@ function RouletteMiniTimer() {
             playGameTapSound()
             // setIsRulesOpen(true)
           }}
-          className="absolute left-[44.8%] top-[14.6%] z-30 flex h-[32px] w-[290px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
+          className="absolute left-[44.8%] top-[14.3%] z-30 flex h-[32px] w-[290px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
 
         >
           <img

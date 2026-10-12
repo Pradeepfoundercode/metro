@@ -26,7 +26,7 @@ export const checkLoginToServer = (onSessionExpired) => {
   socket.on("connect", () => {
     console.log("Device session socket connected:", socket.id);
 
-    // EXACTLY Flutter jaisa payload
+  
     socket.emit(DEVICE_EVENT_NAME, {
       user_id: userId,
     });
