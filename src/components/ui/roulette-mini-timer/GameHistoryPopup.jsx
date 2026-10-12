@@ -84,20 +84,27 @@ export default function GameHistoryPopup({
 
           <div className="flex flex-col">
             {displayHistory.map((row, index) => {
-              const isBallNumber =
-                row.ballPosition !== '-' &&
-                row.ballPosition !== null &&
-                row.ballPosition !== undefined
-
-              const hasWon = Number(row.won) > 0
+              const handId = row.games_no || row.handId || row.gameNo || '-';
+              const rawBall =
+                row.win_number !== undefined
+                  ? row.win_number
+                  : row.ballPosition;
+              const ballPosition =
+                rawBall !== null && rawBall !== undefined && rawBall !== ''
+                  ? rawBall
+                  : '-';
+              const isBallNumber = ballPosition !== '-';
+              const play = row.amount !== undefined ? row.amount : row.play ?? 0;
+              const won = row.win_amount !== undefined ? row.win_amount : row.won ?? 0;
+              const hasWon = Number(won) > 0;
 
               return (
                 <div
-                  key={`${row.handId || row.gameNo}-${index}`}
+                  key={`${handId}-${index}`}
                   className="grid grid-cols-5 border-b border-white/25 py-2.5 text-center text-[17px] font-bold text-white transition hover:bg-white/5"
                 >
                   <div>{row.no || index + 1}</div>
-                  <div>{row.handId || row.gameNo}</div>
+                  <div>{handId}</div>
 
                   <div
                     className={
@@ -106,10 +113,10 @@ export default function GameHistoryPopup({
                         : 'text-white/80'
                     }
                   >
-                    {row.ballPosition ?? '-'}
+                    {ballPosition}
                   </div>
 
-                  <div>{row.play ?? 0}</div>
+                  <div>{play}</div>
 
                   <div
                     className={
@@ -118,10 +125,10 @@ export default function GameHistoryPopup({
                         : 'text-white'
                     }
                   >
-                    {row.won ?? 0}
+                    {won}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import rouletteMiniBg from '../../assets/timer_36/roulettemini1.png'
+// import rouletteMiniBg from '../../assets/timer_36/blue_36_bg.png'
 
-import { useWalletStore } from '../../store/useWalletStore'
 import { useAuth } from '../../hooks/useAuth'
+import { useWalletStore } from '../../store/useWalletStore'
 import toast from 'react-hot-toast'
 
 import {
@@ -59,6 +60,15 @@ import betConBtn from "../../assets/bet_con_btn.png"
 import betAccBtn from "../../assets/bet_acc_btn.png"
 import showResultImg from "../../assets/timer_36/show_result.png"
 
+import image8 from "../../assets/timer_36/2.png"
+import image7 from "../../assets/timer_36/5.png"
+import image6 from "../../assets/timer_36/ten.png"
+import image5 from "../../assets/timer_36/50.png"
+import image4 from "../../assets/timer_36/100.png"
+import image3 from "../../assets/timer_36/500.png"
+import image2 from "../../assets/timer_36/one_k.png"
+import image1 from "../../assets/timer_36/three_k.png"
+
 import { speak } from '../../utils/audio'
 
 import {
@@ -67,6 +77,21 @@ import {
   ROULETTE_ORDER,
   STYLE,
 } from '../../constants/rouletteTimeData.js'
+import { getLastResult, getBlue36BetHistory, placeBlue36Bet, getBlue36WinAmount } from '../../services/blue36.service.js'
+import socket from '../../services/socket.service.js'
+
+
+
+const imageItems = [
+  image1,
+  image2,
+  image3,
+  image4,
+  image5,
+  image6,
+  image7,
+  image8,
+]
 
 const RED_NUMS = [
   1,
@@ -261,77 +286,52 @@ const getWinningPayout = (winner, currentBets) => {
 
 function RouletteMiniTimer() {
   const navigate = useNavigate()
-
   const { user } = useAuth()
-
-  const {
-    wallet,
-    deductWallet,
-    addWallet,
-  } = useWalletStore()
-
+  const { wallet, deductWallet, addWallet } = useWalletStore()
   const [selectedChip, setSelectedChip] = useState(null)
 
-  const [timeLeft, setTimeLeft] = useState(40)
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [timerStatus, setTimerStatus] = useState(1);
+  const [showClock, setShowClock] = useState(true);
 
+  const previousTimerStatusRef = useRef(null);
   const [isSpinning, setIsSpinning] = useState(false)
-
   const [winningNumber, setWinningNumber] = useState(0)
-
   const [boxWheelAngle, setBoxWheelAngle] = useState(0)
-
   const [bigWheelAngle, setBigWheelAngle] = useState(0)
-
   const [ballAngle, setBallAngle] = useState(0)
-
   const pendingWinnerRef = useRef(0)
-
   const winnerBadgeTimeoutRef = useRef(null)
-
+  const spinTimeoutRef = useRef(null)
   const waitTimeoutRef = useRef(null)
-
   const selectChipsTimeoutRef = useRef(null)
-
   const greaterThan10TimeoutRef = useRef(null)
-
   const betAcceptedTimeoutRef = useRef(null)
-
   const [showResultMarker, setShowResultMarker] = useState(false)
-
   const [youWon, setYouWon] = useState(0)
-
-  const [historyList, setHistoryList] = useState(ITEMS)
-
+  const [historyList, setHistoryList] = useState([])
+  const [gameHistoryData, setGameHistoryData] = useState([])
   const [bets, setBets] = useState({})
-
   const [betChips, setBetChips] = useState({})
-
   const [betHistory, setBetHistory] = useState([])
-
   const [previousBets, setPreviousBets] = useState(null)
   const [previousBetChips, setPreviousBetChips] = useState({})
   const [previousBetHistory, setPreviousBetHistory] = useState([])
   const lastRoundBetsRef = useRef({ bets: {}, betChips: {}, betHistory: [] })
   const activeBetsRef = useRef({ bets: {}, betChips: {}, betHistory: [] })
-
   const [isBetConfirmed, setIsBetConfirmed] = useState(false)
-
   const [showBetAccepted, setShowBetAccepted] = useState(false)
-
   const [showPleaseSelectChips, setShowPleaseSelectChips] = useState(false)
-
   const [showGreaterThan10, setShowGreaterThan10] = useState(false)
-
   const [showWaitToComplete, setShowWaitToComplete] = useState(false)
-
   const [isRulesOpen, setIsRulesOpen] = useState(false)
-
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-
   const [isNeighbourOpen, setIsNeighbourOpen] = useState(false)
-
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
-
+  const [isSubmittingBet, setIsSubmittingBet] = useState(false)
+  const lastKnownGameNoRef = useRef(null)
+  const pendingHistoryListRef = useRef(null)
+  const pendingWinAmountRef = useRef(null)
   const totalBet = Object.values(bets).reduce(
     (sum, value) => sum + value,
     0,
@@ -342,206 +342,350 @@ function RouletteMiniTimer() {
     (lastRoundBetsRef.current?.bets && Object.keys(lastRoundBetsRef.current.bets).length > 0)
   )
 
-  useEffect(() => {
-    activeBetsRef.current = { bets, betChips, betHistory }
-  }, [bets, betChips, betHistory])
+  const fetchLastResult = useCallback(async (updateUI = true) => {
+    if (!user?.id) return null;
 
-  useEffect(() => {
-    playGameTapSound()
-  }, [])
+    try {
+      const res = await getLastResult(user.id);
+      const resultData = res?.data || res;
 
-  useEffect(() => {
-    if (timeLeft === 20 && !isSpinning) {
-      speak('Last call')
-    }
-  }, [timeLeft, isSpinning])
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev > 0) {
-          return prev - 1
+      if (Array.isArray(resultData)) {
+        if (resultData.length > 0) {
+          const lastItem = resultData[resultData.length - 1];
+          const lastNo = Number(lastItem?.games_no || lastItem?.game_no);
+          if (Number.isFinite(lastNo) && lastNo > 0) {
+            lastKnownGameNoRef.current = String(lastNo + 1);
+          }
         }
 
-        return 0
-      })
-    }, 1000)
+        const formattedHistory = resultData.map((item) => {
+          const number = Number(item.number);
 
-    return () => {
-      clearInterval(timer)
+          let side = "l";
 
-      stopBlueWheelSound()
+          if (number === 0) {
+            side = "m";
+          } else if (RED_NUMS.includes(number)) {
+            side = "r";
+          }
 
-      if (waitTimeoutRef.current) {
-        clearTimeout(waitTimeoutRef.current)
+          return [number, side];
+        });
+
+        if (updateUI) {
+          setHistoryList(formattedHistory);
+        } else {
+          pendingHistoryListRef.current = formattedHistory;
+        }
+        return resultData;
       }
-
-      if (selectChipsTimeoutRef.current) {
-        clearTimeout(selectChipsTimeoutRef.current)
-      }
-
-      if (greaterThan10TimeoutRef.current) {
-        clearTimeout(greaterThan10TimeoutRef.current)
-      }
-
-      if (winnerBadgeTimeoutRef.current) {
-        clearTimeout(winnerBadgeTimeoutRef.current)
-      }
-
-      if (betAcceptedTimeoutRef.current) {
-        clearTimeout(betAcceptedTimeoutRef.current)
-      }
+    } catch (error) {
+      console.error("Last result API error:", error);
     }
-  }, [])
+    return null;
+  }, [user?.id]);
 
   useEffect(() => {
-    if (timeLeft !== 0) {
-      return
-    }
+    fetchLastResult();
+  }, [fetchLastResult]);
 
-    if (!isSpinning) {
-      const currentActiveBets = Object.keys(bets).length > 0 ? bets : activeBetsRef.current.bets
-      const currentActiveChips = Object.keys(betChips).length > 0 ? betChips : activeBetsRef.current.betChips
-      const currentActiveHistory = betHistory.length > 0 ? betHistory : activeBetsRef.current.betHistory
+  const isSpinningRef = useRef(isSpinning);
+  useEffect(() => {
+    isSpinningRef.current = isSpinning;
+  }, [isSpinning]);
+
+  const fetchWinAmount = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const res = await getBlue36WinAmount(user.id);
+      console.log("blue_36_win_amount response (pre-fetched):", res);
+      if (res?.success && res.win_amount !== undefined && res.win_amount !== null) {
+        const wonAmount = Number(res.win_amount);
+        pendingWinAmountRef.current = wonAmount;
+        // Agar wheel ruk chuka hai toh You Won turant update ho jaye
+        if (!isSpinningRef.current) {
+          setYouWon(wonAmount);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch blue_36 win amount:", err);
+    }
+  }, [user?.id]);
+
+  const fetchWinAmountRef = useRef(fetchWinAmount);
+  useEffect(() => {
+    fetchWinAmountRef.current = fetchWinAmount;
+  }, [fetchWinAmount]);
+
+  const fetchBetHistory = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const res = await getBlue36BetHistory(user.id, 5);
+      console.log("blue_36_bet_history response:", res);
+      if (res?.success && Array.isArray(res?.data)) {
+        setGameHistoryData(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch blue_36 bet history:", err);
+    }
+  }, [user?.id]);
+
+  const startWheelSpin = useCallback(
+    (targetWinner) => {
+      // 1. Current active bets save for payout calculation & repeat
+      const currentActiveBets =
+        Object.keys(bets).length > 0 ? bets : activeBetsRef.current.bets;
+      const currentActiveChips =
+        Object.keys(betChips).length > 0 ? betChips : activeBetsRef.current.betChips;
+      const currentActiveHistory =
+        betHistory.length > 0 ? betHistory : activeBetsRef.current.betHistory;
 
       if (Object.keys(currentActiveBets).length > 0) {
         lastRoundBetsRef.current = {
           bets: { ...currentActiveBets },
           betChips: { ...currentActiveChips },
           betHistory: [...currentActiveHistory],
-        }
-        setPreviousBets(currentActiveBets)
-        setPreviousBetChips(currentActiveChips)
-        setPreviousBetHistory(currentActiveHistory)
+        };
+        setPreviousBets(currentActiveBets);
+        setPreviousBetChips(currentActiveChips);
+        setPreviousBetHistory(currentActiveHistory);
       }
 
-      setIsSpinning(true)
+      // 2. Bets clear ho jayngi
+      setBets({});
+      setBetChips({});
+      setBetHistory([]);
+      setIsBetConfirmed(false);
+      setShowBetAccepted(false);
+      setSelectedChip(null);
+      setYouWon(0);
+      pendingWinAmountRef.current = null;
 
-      setShowWaitToComplete(false)
+      // 3. Clock hide & messages clear
+      setShowClock(false);
+      setShowWaitToComplete(false);
+      setShowPleaseSelectChips(false);
+      setShowGreaterThan10(false);
+      setShowResultMarker(false);
 
-      setShowPleaseSelectChips(false)
+      // 4. Wheel spin krega
+      playBlueWheelSound();
+      setIsSpinning(true);
 
-      setShowGreaterThan10(false)
+      const nextWinner =
+        targetWinner !== undefined && targetWinner !== null
+          ? Number(targetWinner)
+          : Math.floor(Math.random() * 37);
 
-      playBlueWheelSound()
+      pendingWinnerRef.current = nextWinner;
 
-      setTimeLeft(10)
-
-      const nextWinner = Math.floor(Math.random() * 37)
-
-      pendingWinnerRef.current = nextWinner
-
-      const baseAngle = getWheelAngle(nextWinner)
+      const baseAngle = getWheelAngle(nextWinner);
 
       setBoxWheelAngle((prev) => {
-        let diff = (baseAngle - (prev % 360)) % 360
-
+        let diff = (baseAngle - (prev % 360)) % 360;
         if (diff <= 0) {
-          diff += 360
+          diff += 360;
         }
-
-        return prev + 360 * 8 + diff
-      })
+        return prev + 360 * 8 + diff;
+      });
 
       setBigWheelAngle((prev) => {
-        let diff = (baseAngle - (prev % 360)) % 360
-
+        let diff = (baseAngle - (prev % 360)) % 360;
         if (diff <= 0) {
-          diff += 360
+          diff += 360;
         }
-
-        return prev + 360 * 8 + diff
-      })
+        return prev + 360 * 8 + diff;
+      });
 
       setBallAngle((prev) => {
-        return prev - 360 * 14
-      })
+        const currentMod = ((prev % 360) + 360) % 360;
+        return prev - currentMod - 360 * 7;
+      });
 
+      if (spinTimeoutRef.current) {
+        clearTimeout(spinTimeoutRef.current);
+      }
+
+      spinTimeoutRef.current = setTimeout(() => {
+        // 1. Winning number set & announce
+        stopBlueWheelSound();
+        setIsSpinning(false);
+        setWinningNumber(nextWinner);
+        setShowResultMarker(true);
+        speak(`Win number is ${nextWinner}`);
+
+        // 2. UI history list update
+        if (pendingHistoryListRef.current) {
+          setHistoryList(pendingHistoryListRef.current);
+          pendingHistoryListRef.current = null;
+        }
+
+        // 3. You won aur wallet win number & history ke sath ek hi time par update honge
+        const roundBets = lastRoundBetsRef.current?.bets || {};
+        const localPayout = getWinningPayout(nextWinner, roundBets);
+        const finalWinAmount =
+          pendingWinAmountRef.current !== null && pendingWinAmountRef.current !== undefined
+            ? pendingWinAmountRef.current
+            : localPayout;
+
+        setYouWon(finalWinAmount);
+        if (finalWinAmount > 0) {
+          addWallet(finalWinAmount);
+        }
+        pendingWinAmountRef.current = null;
+      }, 8500);
+    },
+    [bets, betChips, betHistory, addWallet]
+  );
+
+  const startWheelSpinRef = useRef(startWheelSpin);
+  useEffect(() => {
+    startWheelSpinRef.current = startWheelSpin;
+  }, [startWheelSpin]);
+
+  const fetchLastResultRef = useRef(fetchLastResult);
+  useEffect(() => {
+    fetchLastResultRef.current = fetchLastResult;
+  }, [fetchLastResult]);
+
+  // Default me bdi wali wheel dheere dheere spin hoti rahegi
+  useEffect(() => {
+    if (isSpinning) return;
+
+    let animationFrameId;
+    let lastTime = performance.now();
+
+    const animate = (currentTime) => {
+      const delta = Math.min(currentTime - lastTime, 100);
+      lastTime = currentTime;
+
+      const speed = 0.015; // ~15 deg/sec (24 seconds per full rotation)
+      const step = delta * speed;
+
+      setBigWheelAngle((prev) => prev + step);
+      setBallAngle((prev) => prev + step);
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [isSpinning]);
+
+  useEffect(() => {
+    const handleTimer = (data) => {
+      let parsedData = data;
+
+      if (typeof data === "string") {
+        try {
+          parsedData = JSON.parse(data);
+        } catch (error) {
+          console.error("Socket parse error:", error);
+          return;
+        }
+      }
+
+      if (!parsedData) return;
+
+      const { timerBetTime, timerStatus: incomingStatus } = parsedData;
+
+      // Timer update hota rahega
+      if (timerBetTime !== undefined) {
+        setTimeLeft(Number(timerBetTime));
+      }
+
+      if (incomingStatus === undefined) return;
+
+      const currentStatus = Number(incomingStatus);
+      const previousStatus = previousTimerStatusRef.current;
+
+      setTimerStatus(currentStatus);
+
+      // Sirf status change hone par action lo
+      if (currentStatus !== previousStatus) {
+        previousTimerStatusRef.current = currentStatus;
+        console.log("Timer status changed:", {
+          previousStatus,
+          currentStatus,
+        });
+
+        if (currentStatus === 2) {
+          setShowClock(false);
+          (async () => {
+            let winNumber = null;
+            try {
+              // Yahan fetchLastResultRef(false) chalega jisse winNumber milega aur formatted list pendingHistoryListRef me save hogi
+              const resultData = await fetchLastResultRef.current?.(false);
+              if (Array.isArray(resultData) && resultData.length > 0) {
+                const lastItem = resultData[resultData.length - 1];
+                if (lastItem && lastItem.number !== undefined) {
+                  winNumber = Number(lastItem.number);
+                  console.log("Wheel will stop on last history number:", winNumber, lastItem);
+                }
+              }
+            } catch (err) {
+              console.error("Error getting win number from last result:", err);
+            }
+            startWheelSpinRef.current?.(winNumber);
+            fetchWinAmountRef.current?.();
+          })();
+        } else if (currentStatus === 1) {
+          setShowClock(true);
+          setIsSpinning(false);
+          setShowResultMarker(false);
+          setShowWaitToComplete(false);
+          setShowGreaterThan10(false);
+          setShowPleaseSelectChips(false);
+          setShowBetAccepted(false);
+          setIsBetConfirmed(false);
+          stopBlueWheelSound();
+          if (spinTimeoutRef.current) {
+            clearTimeout(spinTimeoutRef.current);
+          }
+
+          if (pendingHistoryListRef.current) {
+            setHistoryList(pendingHistoryListRef.current);
+            pendingHistoryListRef.current = null;
+          }
+        }
+      }
+    };
+
+    socket.on("ncr_blue36", handleTimer);
+
+    return () => {
+      socket.off("ncr_blue36", handleTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (spinTimeoutRef.current) {
+        clearTimeout(spinTimeoutRef.current);
+      }
       if (winnerBadgeTimeoutRef.current) {
-        clearTimeout(winnerBadgeTimeoutRef.current)
+        clearTimeout(winnerBadgeTimeoutRef.current);
       }
+      stopBlueWheelSound();
+    };
+  }, []);
 
-      winnerBadgeTimeoutRef.current = setTimeout(() => {
-        setWinningNumber(nextWinner)
-        setShowResultMarker(true)
-      }, 8500)
+  useEffect(() => {
+    activeBetsRef.current = { bets, betChips, betHistory };
+  }, [bets, betChips, betHistory]);
 
-      return
+  useEffect(() => {
+    playGameTapSound();
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft === 20 && !isSpinning && timerStatus === 1) {
+      speak("Last call");
     }
-
-    stopBlueWheelSound()
-
-    setIsSpinning(false)
-
-    const newWinner = pendingWinnerRef.current
-
-    speak(`Win number is ${newWinner}`)
-
-    setWinningNumber(newWinner)
-
-    const side =
-      newWinner === 0
-        ? 'm'
-        : RED_NUMS.includes(newWinner)
-          ? 'r'
-          : 'l'
-
-    setHistoryList((prev) => {
-      return [
-        [newWinner, side],
-        ...prev.slice(0, 9),
-      ]
-    })
-
-    const currentActiveBets = Object.keys(bets).length > 0 ? bets : activeBetsRef.current.bets
-    const currentActiveChips = Object.keys(betChips).length > 0 ? betChips : activeBetsRef.current.betChips
-    const currentActiveHistory = betHistory.length > 0 ? betHistory : activeBetsRef.current.betHistory
-
-    const winPayout = getWinningPayout(
-      newWinner,
-      currentActiveBets,
-    )
-
-    if (winPayout > 0) {
-      addWallet(winPayout)
-
-      setYouWon(winPayout)
-    } else {
-      setYouWon(0)
-    }
-
-    if (Object.keys(currentActiveBets).length > 0) {
-      setPreviousBets(currentActiveBets)
-      setPreviousBetChips(currentActiveChips)
-      setPreviousBetHistory(currentActiveHistory)
-      lastRoundBetsRef.current = {
-        bets: { ...currentActiveBets },
-        betChips: { ...currentActiveChips },
-        betHistory: [...currentActiveHistory],
-      }
-    }
-
-    setBets({})
-
-    setBetChips({})
-
-    setBetHistory([])
-
-    setIsBetConfirmed(false)
-
-    setShowBetAccepted(false)
-
-    setSelectedChip(null)
-
-    setShowResultMarker(false)
-
-    setTimeLeft(40)
-  }, [
-    timeLeft,
-    isSpinning,
-    bets,
-    addWallet,
-  ])
+  }, [timeLeft, isSpinning, timerStatus]);
 
   const showTemporaryMessage = (
     setter,
@@ -610,7 +754,8 @@ function RouletteMiniTimer() {
     if (
       isBetConfirmed ||
       isSpinning ||
-      timeLeft <= 10
+      timerStatus !== 1 ||
+      (timeLeft !== null && timeLeft <= 10)
     ) {
       setShowPleaseSelectChips(false)
 
@@ -657,47 +802,62 @@ function RouletteMiniTimer() {
     ])
   }
 
-  const handleBetConfirm = () => {
+  const handleBetConfirm = async () => {
     if (
       betHistory.length === 0 ||
       isBetConfirmed ||
+      isSubmittingBet ||
       isSpinning ||
-      timeLeft <= 10
+      timerStatus !== 1 ||
+      (timeLeft !== null && timeLeft <= 10)
     ) {
       return
+    }
+
+    const activeGameNo = lastKnownGameNoRef.current;
+
+    if (!activeGameNo) {
+      toast.error('Game number is required');
+      return;
     }
 
     const payload = createBetPayload(
       betHistory,
       user,
-      '450538',
+      activeGameNo,
     )
 
     if (!payload) {
       return
     }
 
-    console.log(
-      'Bets Payload:',
-      payload,
-    )
+    try {
+      setIsSubmittingBet(true)
+      const response = await placeBlue36Bet(payload)
+      console.log('Blue 36 Bet response:', response)
 
-    setIsBetConfirmed(true)
+      if (response?.success === false) {
+        toast.error(response?.message || 'Failed to place bet')
+        return
+      }
 
-    setShowBetAccepted(true)
+      setIsBetConfirmed(true)
+      setShowBetAccepted(true)
+      speak('Bet accepted successfully')
 
-    speak('Bet accepted successfully')
+      if (betAcceptedTimeoutRef.current) {
+        clearTimeout(betAcceptedTimeoutRef.current)
+      }
 
-    if (betAcceptedTimeoutRef.current) {
-      clearTimeout(
-        betAcceptedTimeoutRef.current,
-      )
-    }
-
-    betAcceptedTimeoutRef.current =
-      setTimeout(() => {
+      betAcceptedTimeoutRef.current = setTimeout(() => {
         setShowBetAccepted(false)
       }, 2500)
+    } catch (error) {
+      console.error('Blue 36 Bet placement error:', error)
+      toast.error(error?.response?.data?.message || 'Failed to place bet')
+    } finally {
+      setIsSubmittingBet(false)
+    }
   }
 
   const handleClearBets = () => {
@@ -711,7 +871,8 @@ function RouletteMiniTimer() {
 
     if (
       isSpinning ||
-      timeLeft <= 10
+      timerStatus !== 1 ||
+      (timeLeft !== null && timeLeft <= 10)
     ) {
       setShowPleaseSelectChips(false)
 
@@ -752,7 +913,7 @@ function RouletteMiniTimer() {
   }
 
   const handleUndoBet = () => {
-    if (isSpinning || timeLeft <= 10) {
+    if (isSpinning || timerStatus !== 1 || (timeLeft !== null && timeLeft <= 10)) {
       setShowPleaseSelectChips(false)
       setShowGreaterThan10(false)
       showTemporaryMessage(
@@ -814,7 +975,8 @@ function RouletteMiniTimer() {
 
     if (
       isSpinning ||
-      timeLeft <= 10
+      timerStatus !== 1 ||
+      (timeLeft !== null && timeLeft <= 10)
     ) {
       setShowPleaseSelectChips(false)
 
@@ -874,7 +1036,7 @@ function RouletteMiniTimer() {
       return
     }
 
-    if (isSpinning || timeLeft <= 10) {
+    if (isSpinning || timerStatus !== 1 || (timeLeft !== null && timeLeft <= 10)) {
       setShowPleaseSelectChips(false)
       setShowGreaterThan10(false)
       showTemporaryMessage(
@@ -1035,6 +1197,36 @@ function RouletteMiniTimer() {
           className="pointer-events-none absolute inset-0 z-0 h-full w-full object-fill"
         />
 
+        {/* <div className="absolute right-[679px] -bottom-[164px] grid grid-cols-1 w-[113px] border-y-7 border-l-7 rounded-l-2xl border-white [perspective:2000px] [transform-style:preserve-3d] rotate-x-56 rotate-z-40 rotate-y-2 -skew-x-8 -skew-y-2">
+      {imageItems.map((image, index) => (
+        <div
+          key={index}
+          className="flex h-[94px]  items-center justify-center "
+        >
+          <img
+            src={image}
+            alt={`Option ${index + 1}`}
+            className='h-[75px] w-[76px] object-contain -rotate-90  '
+            
+          />
+        </div>
+      ))}
+    </div> */}
+
+
+        {/* 
+    <div className="absolute right-[457px] bottom-59 h-[5px] w-[645px]  bg-white -rotate-z-25 rounded-[50px] ">
+    </div>
+    <div className="absolute left-[883px] bottom-8 h-[89px] w-[5px]  bg-white -rotate-z-54 rounded-[50px]">
+    </div>
+    <div className="absolute right-[400px] bottom-80 h-[89px] w-[5px]  bg-white -rotate-z-54 rounded-[50px]">
+    </div> */}
+
+
+
+
+
+
         {/* HISTORY */}
         <div className="pointer-events-none absolute rounded-lg left-[84px] top-[19px] bg-black z-10 flex h-[282px] w-[145px] flex-col p-[12px_14px] text-[18px] font-black leading-none">
           {historyList.map(
@@ -1053,7 +1245,7 @@ function RouletteMiniTimer() {
         {/* CURRENT PLAY + YOU WON */}
         <div className="pointer-events-none absolute left-[262px] top-[20px] z-10 flex h-[182px] w-[422px] flex-col p-[0px_12px]">
           <div className="relative flex h-[122px] w-full overflow-hidden rounded-t-[10px]  bg-[#ea926b]">
-            <div className="absolute left-[200px] h-[600px] w-[600px] -translate-x-1/2 origin-center">
+            <div className="absolute left-[201px] h-[600px] w-[600px] -translate-x-1/2 origin-center">
               <img
                 src={wheelImg}
                 alt="Roulette Wheel"
@@ -1128,7 +1320,7 @@ function RouletteMiniTimer() {
                 style={{
                   transform: `rotate(${bigWheelAngle}deg)`,
                   transition: isSpinning
-                    ? 'transform 8.5s cubic-bezier(0.15, 0.85, 0.25, 1)'
+                    ? 'transform 8.5s cubic-bezier(0.18, 0.88, 0.25, 1)'
                     : 'none',
                 }}
               >
@@ -1145,7 +1337,7 @@ function RouletteMiniTimer() {
                 style={{
                   transform: `rotate(${ballAngle}deg)`,
                   transition: isSpinning
-                    ? 'transform 8.5s cubic-bezier(0.1, 0.8, 0.2, 1)'
+                    ? 'transform 8.2s cubic-bezier(0.18, 0.88, 0.25, 1)'
                     : 'none',
                 }}
               >
@@ -1199,7 +1391,7 @@ function RouletteMiniTimer() {
             // setIsRulesOpen(true)
           }}
           className="absolute left-[44.8%] top-[14.6%] z-30 flex h-[32px] w-[290px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
-       
+
         >
           <img
             src={rulesBtn}
@@ -1216,7 +1408,7 @@ function RouletteMiniTimer() {
             setIsNeighbourOpen(true)
           }}
           className="absolute left-[6%] top-[86.5%] z-30 flex h-[75px] w-[190px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
-      
+
         >
           <img
             src={neighbourBtn}
@@ -1231,9 +1423,10 @@ function RouletteMiniTimer() {
           onClick={() => {
             playGameTapSound()
             setIsHistoryOpen(true)
+            fetchBetHistory()
           }}
           className="absolute left-[79.6%] top-[96.1%] z-30 flex h-[74px] w-[212px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
-   
+
         >
           <img
             src={gameHistoryBtn}
@@ -1250,7 +1443,7 @@ function RouletteMiniTimer() {
             setIsLeaveModalOpen(true)
           }}
           className="absolute left-[92.6%] top-[98%] z-30 flex h-[40px] w-[250px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-100"
-         
+
         >
           <img
             src={leaveTableBtn}
@@ -1284,7 +1477,7 @@ function RouletteMiniTimer() {
                   'translate(-55%, -57%) rotateX(59deg)',
               }}
               className="z-40 flex cursor-pointer items-center justify-center rounded-full bg-transparent focus:outline-none"
-           
+
             >
               {isSelected && (
                 <span
@@ -1294,9 +1487,8 @@ function RouletteMiniTimer() {
                       ? { transform: chip.borderTransform }
                       : {}),
                   }}
-                  className={`pointer-events-none absolute animate-pulse rounded-full border-[3px] border-yellow-300 shadow-[0_0_16px_#ffd700] ring-2 ring-yellow-400/90 ${
-                    chip.borderInset || chip.borderClassName || '-inset-2.5'
-                  }`}
+                  className={`pointer-events-none absolute animate-pulse rounded-full border-[3px] border-yellow-300 shadow-[0_0_16px_#ffd700] ring-2 ring-yellow-400/90 ${chip.borderInset || chip.borderClassName || '-inset-2.5'
+                    }`}
                 />
               )}
             </button>
@@ -1339,7 +1531,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-20 flex cursor-pointer items-center justify-center rounded-full  "
-             
+
             >
               <span className="pointer-events-none absolute inset-0 rounded-full   " />
 
@@ -1422,7 +1614,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-20 flex scale-105 cursor-pointer items-center justify-center rounded-md "
-              
+
             >
               <span className="pointer-events-none absolute inset-0 rounded-md  " />
 
@@ -1472,7 +1664,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-24 flex cursor-pointer items-center justify-center rounded-full "
-            
+
             >
               <span className="pointer-events-none absolute inset-0 rounded-full " />
 
@@ -1523,7 +1715,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-26 flex cursor-pointer items-center justify-center rounded-md "
-            
+
             >
               <span className="pointer-events-none absolute inset-0 rounded-md " />
 
@@ -1574,7 +1766,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-28 flex cursor-pointer items-center justify-center rounded-full "
-             
+
             >
               <span className="pointer-events-none absolute inset-0 rounded-full  " />
 
@@ -1625,7 +1817,7 @@ function RouletteMiniTimer() {
                   'center center',
               }}
               className="group z-30 flex cursor-pointer items-center justify-center rounded-full "
-         
+
             >
               <span className="pointer-events-none absolute inset-0 rounded-full  " />
 
@@ -1706,8 +1898,9 @@ function RouletteMiniTimer() {
           <button
             type="button"
             onClick={handleBetConfirm}
-            className="absolute left-[1570px] top-[640px] z-30 flex h-[65px] w-[256px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center "
-            
+            disabled={isSubmittingBet}
+            className={`absolute left-[1570px] top-[640px] z-30 flex h-[65px] w-[256px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95 ${isSubmittingBet ? 'opacity-70 pointer-events-none' : ''
+              }`}
           >
             <img
               src={betConBtn}
@@ -1720,7 +1913,7 @@ function RouletteMiniTimer() {
         {betHistory.length > 0 && isBetConfirmed && (
           <div
             className="absolute left-[1570px] top-[640px] z-30 flex h-[65px] w-[256px] -translate-x-1/2 -translate-y-1/2 items-center justify-center pointer-events-none"
-           
+
           >
             <img
               src={betAccBtn}
@@ -1731,7 +1924,7 @@ function RouletteMiniTimer() {
         )}
 
         {/* TIMER */}
-        {!isSpinning && (
+        {timerStatus === 1 && showClock && !isSpinning && (
           <div className="pointer-events-none absolute left-[1785px] top-[760px] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
             <span className="mb-1 text-[14px] font-black tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
               Time Left:{timeLeft}
@@ -1752,12 +1945,12 @@ function RouletteMiniTimer() {
         )}
 
         {/* REPEAT (SHOWN ONLY IF PREVIOUS BETS EXIST AND NO CHIP SELECTED) */}
-        {hasPreviousBets && !selectedChip && !isBetConfirmed && timeLeft > 10 && !isSpinning && (
+        {hasPreviousBets && !selectedChip && !isBetConfirmed && timerStatus === 1 && (timeLeft === null || timeLeft > 10) && !isSpinning && (
           <button
             type="button"
             onClick={handleRepeatBets}
             className="absolute left-[1170px] top-[838px] z-20 flex h-[74px] w-[210px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
-           
+
           >
             <img
               src={repeatBtn}
@@ -1768,7 +1961,7 @@ function RouletteMiniTimer() {
         )}
 
         {/* REMOVE, DOUBLE, CLEAR BET */}
-        {Boolean(selectedChip) && !isBetConfirmed && timeLeft > 10 && !isSpinning && (
+        {Boolean(selectedChip) && !isBetConfirmed && timerStatus === 1 && (timeLeft === null || timeLeft > 10) && !isSpinning && (
           <>
             <button
               type="button"
@@ -1825,6 +2018,7 @@ function RouletteMiniTimer() {
             user?.username || 'PLAYER'
           }
           balance={wallet}
+          historyData={gameHistoryData}
         />
 
         <NeighbourPopup
@@ -1843,7 +2037,7 @@ function RouletteMiniTimer() {
           bets={bets}
           betChips={betChips}
           selectedChip={selectedChip}
-          isLocked={timeLeft <= 10 || isSpinning}
+          isLocked={timerStatus !== 1 || isSpinning || (timeLeft !== null && timeLeft <= 10)}
         />
 
         {/* LEAVE TABLE CONFIRMATION POPUP */}

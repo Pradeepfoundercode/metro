@@ -5,6 +5,7 @@ import { useWalletStore } from '../../store/useWalletStore'
 import toast from 'react-hot-toast'
 
 
+
 import bgSecond from '../../assets/roulette/background_first.png'
 import funRouletteBanner from '../../assets/roulette/fun.gif'
 import rouletteMachine from '../../assets/roulette/raulette_machine_num.png'
@@ -49,10 +50,13 @@ import {
   ROW_2,
   ROW_3,
 } from '../../constants/funRouletteData'
-import { placeFunRouletteBet } from '../../services/funroulette.service'
+
 import { getGameId, createBetPayload } from '../../utils/helper'
 import { playCoinSplashSound, playGameTapSound, playTickSound, stopTickSound } from '../../utils/sound'
 import { speak } from '../../utils/audio'
+import { getFunRouletteBetHistory, getFunRouletteLast13Result, placeFunRouletteBet } from '../../services/funRoulette.service.js'
+import socket from '../../services/socket.service.js'
+
 
 
 const MIN_10_BET_SPOTS = [
@@ -95,8 +99,14 @@ export default function FunRoulette() {
   const [betHistory, setBetHistory] = useState([])
   const [showWaitToComplete, setShowWaitToComplete] = useState(false)
 
-  const [timeLeft, setTimeLeft] = useState(40)
+  const [timeLeft, setTimeLeft] = useState(0)
+  const [timerStatus , setTimerStatus] = useState(1)
   const initialTimeRef = useRef(timeLeft)
+  const previousTimerStatusRef = useRef(null);
+  const lastKnownGameNoRef = useRef(null);
+  const pendingHistoryListRef = useRef(null);
+  const pendingWinAmountRef = useRef(0);
+  const [targetWinning, setTargetWinning] = useState(null)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
@@ -104,22 +114,190 @@ export default function FunRoulette() {
   const [showPlaceYourBets, setShowPlaceYourBets] = useState(true)
 
   const [winnerNumber, setWinnerNumber] = useState('0')
-
-  const [historyList, setHistoryList] = useState([
-    '26',
-    '12',
-    '13',
-    '7',
-    '6',
-  ])
-
   const [isLocked, setIsLocked] = useState(false)
-
   const [statusMessage, setStatusMessage] = useState(
     'Please Bet to start Game . Minimum Bet = 1'
   )
 
   const [winningSpot, setWinningSpot] = useState(null)
+
+  const [historyList, setHistoryList] = useState([])
+  const [historyData, setHistoryData] = useState([])
+
+   
+
+
+useEffect(() => {
+  const handleTimer = (data) => {
+    let parsedData = data;
+
+    if (typeof data === 'string') {
+      try {
+        parsedData = JSON.parse(data);
+      } catch (error) {
+        console.error('Socket timer parse error:', error);
+        return;
+      }
+    }
+
+    if (!parsedData) return;
+
+    const { timerBetTime, timerStatus } = parsedData;
+
+    // Timer har second update hoga
+    if (timerBetTime !== undefined) {
+      setTimeLeft(Number(timerBetTime));
+    }
+
+    if (timerStatus === undefined) return;
+
+    const status = Number(timerStatus);
+    const previousStatus = previousTimerStatusRef.current;
+
+    setTimerStatus(status);
+
+    console.log('Timer:', {
+      timerBetTime,
+      status,
+      previousStatus,
+    });
+
+    // Sirf status change hone par actions chalenge
+    if (status !== previousStatus) {
+      previousTimerStatusRef.current = status;
+
+      if (status === 2) {
+        // Betting phase khatam:
+        setBets({});
+        setBetHistory([]);
+        setShowWaitToComplete(false);
+        setShowGreaterThan10(false);
+        setShowBetAccepted(false);
+        setShowPlaceYourBets(true);
+
+        (async () => {
+          let winItem = null;
+          try {
+            const res = await getFunRouletteLast13Result(user?.id);
+            if (res?.last_win_amount !== undefined && res?.last_win_amount !== null) {
+              pendingWinAmountRef.current = res.last_win_amount;
+            } else {
+              pendingWinAmountRef.current = 0;
+            }
+            const resultData = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+
+            if (resultData.length > 0) {
+              // Jo number data me last me aayga uspr ball rukni chahiye
+              const lastItem = resultData[resultData.length - 1];
+              winItem = {
+                number: String(lastItem?.number),
+                index: lastItem?.index !== undefined && lastItem?.index !== null ? Number(lastItem.index) : null,
+              };
+
+              const lastNo = Number(lastItem?.games_no || lastItem?.game_no);
+              if (Number.isFinite(lastNo) && lastNo > 0) {
+                lastKnownGameNoRef.current = String(lastNo + 1);
+              }
+
+              const lastFiveResults = resultData
+                .slice(-5)
+                .map((item) => String(item.number));
+
+              pendingHistoryListRef.current = lastFiveResults;
+            }
+          } catch (error) {
+            console.error('Failed to fetch roulette results on status 2:', error);
+          }
+
+          setTargetWinning(winItem);
+          setIsPopupOpen(true);
+        })();
+      }
+
+      if (status === 1) {
+        // Naya betting phase: sirf ek baar
+        setIsPopupOpen(false);
+        setTargetWinning(null);
+        setShowWaitToComplete(false);
+        setShowGreaterThan10(false);
+        setIsLocked(false);
+        setShowPlaceYourBets(true);
+
+        if (pendingHistoryListRef.current) {
+          setHistoryList(pendingHistoryListRef.current);
+          pendingHistoryListRef.current = null;
+        }
+      }
+    }
+  };
+
+  socket.on('ncr_green36', handleTimer);
+
+  return () => {
+    socket.off('ncr_green36', handleTimer);
+  };
+}, [user?.id]);
+
+
+    // console.log(timeLeft, "timeLeft")
+    // console.log(timerStatus, "timerStatus")
+
+
+
+   useEffect(() => {
+    if (!user?.id) return
+  
+    const fetchHistory = async () => {
+      try {
+        const res = await getFunRouletteBetHistory(user.id)
+        setHistoryData(res.data || [])
+      } catch (error) {
+        console.log(error)
+      }
+    }
+  
+    fetchHistory()
+  }, [user?.id])
+
+
+const fetchLatestRouletteResults = async () => {
+  if (!user?.id) return;
+
+  try {
+    const res = await getFunRouletteLast13Result(user.id);
+    if (res?.last_win_amount !== undefined && res?.last_win_amount !== null) {
+      setWinnerNumber(res.last_win_amount);
+      pendingWinAmountRef.current = res.last_win_amount;
+    }
+    const resultData = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+
+    if (resultData.length > 0) {
+      const lastItem = resultData[resultData.length - 1];
+      const lastNo = Number(lastItem?.games_no || lastItem?.game_no);
+      if (Number.isFinite(lastNo) && lastNo > 0) {
+        lastKnownGameNoRef.current = String(lastNo + 1);
+      }
+
+      const lastFiveResults = resultData
+        .slice(-5)
+        .map((item) => String(item.number));
+
+      setHistoryList(lastFiveResults);
+    }
+  } catch (error) {
+    console.error('Failed to fetch roulette results:', error);
+  }
+};
+
+useEffect(() => {
+  if (!user?.id) return;
+
+  fetchLatestRouletteResults();
+}, [user?.id]);
+
+
+  
+  
 
   const totalBet = Object.values(bets).reduce(
     (total, amount) => total + amount,
@@ -259,20 +437,40 @@ playCoinSplashSound()
 }
 
 const handleBetOk = async () => {
-  const payload = createBetPayload(betHistory, user, '450538')
+  if (!betHistory?.length || isLocked) {
+    return;
+  }
+
+  const activeGameNo = lastKnownGameNoRef.current;
+
+  if (!activeGameNo) {
+    toast.error('Game number is required');
+    return;
+  }
+
+  const payload = createBetPayload(
+    betHistory,
+    user,
+    activeGameNo
+  )
 
   if (!payload) return
 
   try {
     const response = await placeFunRouletteBet(payload)
 
-    console.log(response, 'bet response')
+    console.log('Bet response:', response)
+    console.log('Sent game number:', activeGameNo)
+
+    if (response?.success === false) {
+      toast.error(response?.message || 'Failed to place bet')
+      return
+    }
 
     setIsLocked(true)
     setShowBetAccepted(true)
     setBets({})
     setShowPlaceYourBets(false)
-    
     setShowWaitToComplete(false)
     setShowGreaterThan10(false)
 
@@ -354,18 +552,18 @@ const handleBetOk = async () => {
 
 
   // 1. Countdown interval decrements timeLeft each second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
-    }, 1000)
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
+  //   }, 1000)
 
-    return () => {
-      clearInterval(timer)
-      stopTickSound()
-    }
-  }, [])
+  //   return () => {
+  //     clearInterval(timer)
+  //     stopTickSound()
+  //   }
+  // }, [])
 
-  // 2. Play tick sound only during the game timer (muted when wheel popup is open)
+
   useEffect(() => {
     if (!isPopupOpen && timeLeft > 0) {
       playTickSound()
@@ -374,27 +572,11 @@ const handleBetOk = async () => {
     }
   }, [timeLeft, isPopupOpen])
 
-  // 3. When timeLeft reaches 0, cleanly transition to/from the 10s wheel popup
-  useEffect(() => {
-    if (timeLeft === 0) {
-  if (!isPopupOpen) {
-    setIsPopupOpen(true)
-    setBets({})
-    setShowWaitToComplete(false)
-    setShowGreaterThan10(false)
-    setTimeLeft(10)
-  } else {
-    setIsPopupOpen(false)
-    setShowWaitToComplete(false)
-    setShowGreaterThan10(false)
-    setTimeLeft(initialTimeRef.current || 40)
-  }
-}
-  }, [timeLeft, isPopupOpen])
+
 
   const handleClosePopup = () => {
     setIsPopupOpen(false)
-    setTimeLeft(initialTimeRef.current || 40)
+    setTargetWinning(null)
   }
 
 
@@ -404,7 +586,7 @@ const handleBetOk = async () => {
 
 
   return (
-    <div className="game-viewport select-none">
+    <div className="game-viewport select-none font-aclonica">
 
       <div className="game-stage">
 
@@ -1512,18 +1694,19 @@ const handleBetOk = async () => {
         
 
         <RouletteMachinePopup
-  isOpen={isPopupOpen}
-  onClose={handleClosePopup}
-  onResult={({ number }) => {
-    setWinnerNumber(number)
-    setWinningSpot(number)
-
-    setHistoryList((prev) => [
-      number,
-      ...prev,
-    ].slice(0, 5))
-  }}
-/>
+          isOpen={isPopupOpen}
+          targetNumber={targetWinning?.number}
+          targetIndex={targetWinning?.index}
+          onClose={handleClosePopup}
+          onResult={({ number }) => {
+            setWinnerNumber(pendingWinAmountRef.current ?? 0)
+            setWinningSpot(number)
+            if (pendingHistoryListRef.current) {
+              setHistoryList(pendingHistoryListRef.current)
+              pendingHistoryListRef.current = null
+            }
+          }}
+        />
 
         {/* =========================
             ROULETTE GAME HISTORY POPUP
@@ -1533,6 +1716,7 @@ const handleBetOk = async () => {
           onClose={() => setIsHistoryOpen(false)}
           userName={user?.username || 'PLAYER'}
           balance={balance}
+          historyData={historyData}
         />
 
         {/* =========================

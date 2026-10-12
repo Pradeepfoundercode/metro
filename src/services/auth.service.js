@@ -1,55 +1,38 @@
-import API from './api'
-import { getDeviceId } from '../utils/device'
-
-const USE_MOCK = true
+import API from "./api";
+import { getDeviceId } from "../utils/device";
 
 export const loginUser = async ({ username, password }) => {
-  if (USE_MOCK) {
-    await new Promise((resolve) => {
-      setTimeout(resolve, 500)
-    })
+  const deviceId = getDeviceId();
 
-    return {
-      success: true,
-      message: ' login successfully',
-      id: 155,
-      device_id: getDeviceId(),
-    }
-  }
-
-  const response = await API.post('/login', {
+  const response = await API.post("/login", {
     username,
     password,
-    device_id: getDeviceId(),
-  })
+    device_id: deviceId,
+  });
 
-  return response.data
-}
+  return response.data;
+};
 
 export const getUserProfile = async (userId) => {
-  if (USE_MOCK) {
-    await new Promise((resolve) => {
-      setTimeout(resolve, 300)
-    })
+  const response = await API.get(`/profile/${userId}`);
+  return response.data;
+};
 
-    const currentUsername = localStorage.getItem('username') || 'pradeep'
+export const recieverTransfer = async (userId) => {
+  const res = await API.get('/recieverTransferAmountList', {
+    params: {
+      user_id: userId,
+    },
+  })
 
-    return {
-      success: true,
-      message: 'User found..!',
-      data: {
-        id: userId,
-        username: currentUsername,
-        name: currentUsername,
-        mobile: '0987654321',
-        email: `${currentUsername}@gmail.com`,
-        wallet: 8486,
-        status: 1,
-      },
-    }
-  }
+  return res.data
+}
+export const senderTransferList = async (userId) => {
+  const res = await API.get('/senderTransferList', {
+    params: {
+      user_id: userId,
+    },
+  })
 
-  const response = await API.get(`/profile/${userId}`)
-
-  return response.data
+  return res.data
 }

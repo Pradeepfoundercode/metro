@@ -7,18 +7,18 @@ import { loginSchema } from "../../schemas/authSchema";
 import loginBg from "../../assets/bg/login_bg.png";
 import loginBtn from "../../assets/button/login_btn.png";
 import { useAuth } from "../../hooks/useAuth";
-import { useLogin } from "../../hooks/useLogin";
+import toast from "react-hot-toast";
 import { useFullscreenLandscape } from "../../hooks/useFullscreen";
 import { speak } from "../../utils/audio";
 
 export default function Login() {
   const { enterFullscreen } = useFullscreenLandscape();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const { isAuthenticated } = useAuth();
-  const loginMutation = useLogin();
+  const { user, login } = useAuth()
 
   const {
     register,
@@ -35,22 +35,47 @@ export default function Login() {
     },
   });
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return;
+   useEffect(() => {
+    if (!user?.id) {
+      return
     }
-  speak('Welcome to Metro Game')
-    navigate("/dashboard", {
-      replace: true,
-    });
-  }, [isAuthenticated, navigate]);
 
-  const onSubmit = (data) => {
-    loginMutation.mutate({
-      username: data.username,
-      password: data.password,
-    });
-  };
+    navigate('/dashboard', {
+      replace: true,
+    })
+  }, [user?.id, navigate])
+
+  const onSubmit = async (data) => {
+    try {
+      setLoading(true)
+
+      const response = await login({
+        username: data.username,
+        password: data.password,
+      })
+
+      if (!response?.success) {
+        toast.error(
+          response?.message || 'Login failed'
+        )
+
+        return
+      }
+
+      toast.success(
+        response?.message || 'Login successful'
+      )
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Login failed. Please try again.'
+
+      toast.error(message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleGoDashboard = async () => {
   await enterFullscreen()
@@ -244,7 +269,7 @@ export default function Login() {
               <div className="flex w-[210px] items-center justify-center ml-10">
                 <button
                   type="submit"
-                  disabled={loginMutation.isPending}
+                  disabled={loading}
                   className="w-full cursor-pointer border-none bg-transparent p-0 outline-none transition hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <img

@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useWalletStore } from '../../store/useWalletStore'
-import { placeFunTargetBet } from '../../services/funtarget.service'
+import toast from 'react-hot-toast'
+import { placeFunTargetBet, getFunTargetLastResult, getFunTargetWinAmount } from '../../services/funtarget.service'
+import socket from '../../services/socket.service'
 import GameHistoryPopup from '../../components/common/GameHistoryPopup'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
 import { playGameTapSound, playMoveChakraSound, stopMoveChakraSound, playPlaceChipSound } from '../../utils/sound'
@@ -41,8 +43,9 @@ export default function FunTarget() {
   const { user, userId } = useAuth()
   const { wallet, deductWallet, addWallet, setWallet } = useWalletStore()
 
-  const timerEndRef = useRef(null)
-  const [timeLeft, setTimeLeft] = useState(40)
+  const [timeLeft, setTimeLeft] = useState(0)
+  const [timerStatus, setTimerStatus] = useState(1)
+  const previousTimerStatusRef = useRef(null)
   const [isSpinning, setIsSpinning] = useState(false)
   const [winnerNumber, setWinnerNumber] = useState(0)
   const [last10Data, setLast10Data] = useState([1, 4, 2, 8, 9, 4, 9, 9, 5, 1])
@@ -56,7 +59,7 @@ export default function FunTarget() {
   const [bets, setBets] = useState({})
   const totalBet = Object.values(bets).reduce((sum, val) => sum + val, 0)
 
-  const isBettingClosed = timeLeft <= 5 || isSpinning || isBetAccepted
+  const isBettingClosed = timerStatus === 2 || timeLeft <= 5 || isSpinning || isBetAccepted
 
   const rotationRef = useRef(0)
   rotationRef.current = rotation
@@ -65,7 +68,11 @@ export default function FunTarget() {
   isBetAcceptedRef.current = isBetAccepted
 
   const spinTimeoutRef = useRef(null)
-  console.log(timeLeft)
+  const pendingLast10Ref = useRef(null)
+  const triggerSpinRef = useRef(null)
+  const fetchLastResultRef = useRef(null)
+  const lastKnownGameNoRef = useRef(null)
+  const pendingWinAmountRef = useRef(0)
   const handleBet = (num) => {
     if (isBettingClosed) return
     if (wallet < selectedChip) return
@@ -100,6 +107,13 @@ export default function FunTarget() {
       return
     }
 
+    const activeGameNo = lastKnownGameNoRef.current
+
+    if (!activeGameNo) {
+      toast.error('Game number is required')
+      return
+    }
+
     const activeUserId = String(
       user?.id ||
       userId ||
@@ -110,6 +124,7 @@ export default function FunTarget() {
 
     const payload = {
       user_id: activeUserId,
+      games_no: String(activeGameNo),
       bets: formattedBets,
     }
 
@@ -119,6 +134,11 @@ export default function FunTarget() {
       setIsSubmittingBet(true)
       const res = await placeFunTargetBet(payload)
       console.log('Fun Target Bet Response:', res)
+
+      if (res?.success === false) {
+        toast.error(res?.message || 'Failed to place bet')
+        return
+      }
 
       setIsBetAccepted(true)
       speak('Bets Accepted Successfully')
@@ -130,16 +150,70 @@ export default function FunTarget() {
       }
     } catch (err) {
       console.error('Failed to place bet:', err)
+      toast.error('Failed to place bet')
     } finally {
       setIsSubmittingBet(false)
     }
   }
 
-  const triggerSpin = () => {
+  const fetchLastResult = useCallback(async (updateUI = true) => {
+    const activeUserId = user?.id || userId || localStorage.getItem('user_id')
+    if (!activeUserId) return null
+
+    try {
+      const res = await getFunTargetLastResult(activeUserId)
+      const resultData = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : [])
+
+      if (Array.isArray(resultData) && resultData.length > 0) {
+        const lastNo = Number(res?.last_game_no || resultData[0]?.games_no || resultData[0]?.game_no)
+        if (Number.isFinite(lastNo) && lastNo > 0) {
+          lastKnownGameNoRef.current = String(lastNo + 1)
+        }
+
+        if (updateUI && res?.last_win_amount !== undefined && res?.last_win_amount !== null) {
+          const initWin = Number(res.last_win_amount)
+          setWinnerNumber(initWin)
+          pendingWinAmountRef.current = initWin
+        }
+
+        // Data me sbse pehla item latest round ka result hai
+        const numbers = resultData
+          .slice(0, 10)
+          .map((item) => (typeof item === 'object' && item !== null ? Number(item.number) : Number(item)))
+          .reverse()
+
+        if (updateUI) {
+          if (numbers.length > 0) {
+            setLast10Data(numbers)
+          }
+        } else {
+          pendingLast10Ref.current = numbers
+        }
+
+        return { res, resultData }
+      }
+    } catch (error) {
+      console.error('Failed to fetch fun target last result:', error)
+    }
+    return null
+  }, [user?.id, userId])
+
+  useEffect(() => {
+    fetchLastResult(true)
+  }, [fetchLastResult])
+
+  useEffect(() => {
+    fetchLastResultRef.current = fetchLastResult
+  }, [fetchLastResult])
+
+  const triggerSpin = useCallback((winningNum = null) => {
     setIsSpinning(true)
     playMoveChakraSound()
 
-    const nextWinner = Math.floor(Math.random() * 10)
+    const nextWinner =
+      winningNum !== null && winningNum !== undefined && Number.isFinite(Number(winningNum))
+        ? Number(winningNum)
+        : Math.floor(Math.random() * 10)
 
     const targetAngle = (360 - nextWinner * 36) % 360
     const spins = 28
@@ -151,9 +225,15 @@ export default function FunTarget() {
     spinTimeoutRef.current = setTimeout(() => {
       stopMoveChakraSound()
       setIsSpinning(false)
-      setWinnerNumber(nextWinner)
+      setWinnerNumber(pendingWinAmountRef.current ?? 0)
       speak(`Winning number is ${nextWinner}`)
-      setLast10Data((prev) => [nextWinner, ...prev.slice(0, 9)])
+
+      if (pendingLast10Ref.current && pendingLast10Ref.current.length > 0) {
+        setLast10Data(pendingLast10Ref.current)
+        pendingLast10Ref.current = null
+      } else {
+        setLast10Data((prev) => [...prev.slice(1), nextWinner])
+      }
 
       setBets((currentBets) => {
         const unconfirmedTotal = Object.values(currentBets).reduce((sum, v) => sum + v, 0)
@@ -164,37 +244,90 @@ export default function FunTarget() {
       })
 
       setIsBetAccepted(false)
-      timerEndRef.current = Date.now() + 40000
-      setTimeLeft(40)
     }, 11000)
-  }
+  }, [])
 
   useEffect(() => {
-    if (isSpinning) return
+    triggerSpinRef.current = triggerSpin
+  }, [triggerSpin])
 
-    if (!timerEndRef.current) {
-      timerEndRef.current = Date.now() + 40000
+  useEffect(() => {
+    const handleTimer = (data) => {
+      let parsedData = data
+
+      if (typeof data === 'string') {
+        try {
+          parsedData = JSON.parse(data)
+        } catch (error) {
+          console.error('Socket timer parse error:', error)
+          return
+        }
+      }
+
+      if (!parsedData) return
+
+      const { timerBetTime, timerStatus: incomingStatus } = parsedData
+
+      // Timer har second update hoga
+      if (timerBetTime !== undefined) {
+        setTimeLeft(Number(timerBetTime))
+      }
+
+      if (incomingStatus === undefined) return
+
+      const status = Number(incomingStatus)
+      const previousStatus = previousTimerStatusRef.current
+
+      setTimerStatus(status)
+
+      // Sirf status change hone par actions chalenge
+      if (status !== previousStatus) {
+        previousTimerStatusRef.current = status
+
+        if (status === 2) {
+          (async () => {
+            let winNumber = null
+            try {
+              const responseData = await fetchLastResultRef.current?.(false)
+              const list = responseData?.resultData || (Array.isArray(responseData) ? responseData : [])
+              const rawRes = responseData?.res
+
+              // Sbse pehle aane wala item (index 0) win number hai
+              if (rawRes?.win_number !== undefined && rawRes?.win_number !== null) {
+                winNumber = Number(rawRes.win_number)
+              } else if (Array.isArray(list) && list.length > 0) {
+                const firstItem = list[0]
+                if (firstItem && (firstItem.number !== undefined || typeof firstItem === 'number')) {
+                  winNumber = Number(firstItem.number !== undefined ? firstItem.number : firstItem)
+                }
+              }
+
+              // Result API ke just baad fun_win_amount API call hogi
+              const activeUserId = user?.id || userId || localStorage.getItem('user_id') || '156'
+              const winRes = await getFunTargetWinAmount(activeUserId)
+              const winAmount = Number(winRes?.win_amount ?? winRes?.last_win_amount ?? 0)
+              pendingWinAmountRef.current = winAmount
+            } catch (err) {
+              console.error('Error fetching fun last result / win amount:', err)
+            }
+            triggerSpinRef.current?.(winNumber)
+          })()
+        }
+
+        if (status === 1) {
+          setIsSpinning(false)
+          setIsBetAccepted(false)
+          setBets({})
+        }
+      }
     }
 
-    const timer = setInterval(() => {
-      const remaining = Math.max(
-        0,
-        Math.ceil((timerEndRef.current - Date.now()) / 1000)
-      )
-
-      setTimeLeft(remaining)
-
-      if (remaining <= 0) {
-        clearInterval(timer)
-        timerEndRef.current = null
-        triggerSpin()
-      }
-    }, 250)
+    socket.on('ncr_green36', handleTimer)
 
     return () => {
-      clearInterval(timer)
+      socket.off('ncr_green36', handleTimer)
     }
-  }, [isSpinning])
+  }, [])
 
   useEffect(() => {
     playGameTapSound()
@@ -245,11 +378,11 @@ export default function FunTarget() {
                 className="pointer-events-none absolute inset-0 h-full w-full object-fill rounded-2xl"
               />
               <span className="relative z-10 text-[26px] font-black tracking-widest text-black drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)]">
-                {isSpinning || timeLeft === 0
+                {timerStatus === 2 || timeLeft === 0 || isSpinning
                   ? 'WAITING'
                   : `00 : ${timeLeft < 10 ? '0' + timeLeft : timeLeft}`}
               </span>
-              {timeLeft <= 5 && !isSpinning && timeLeft > 0 && (
+              {timeLeft <= 5 && !isSpinning && timeLeft > 0 && timerStatus === 1 && (
                 <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl border-[10px] border-[#ffe600] p-1 flash-border" />
               )}
             </div>
@@ -314,8 +447,8 @@ export default function FunTarget() {
               type="button"
               onClick={() => setSelectedChip(chip.value)}
               className={`relative z-10 h-[55px] w-[75px] cursor-pointer transition-transform duration-150 ${selectedChip === chip.value
-                  ? 'scale-115 drop-shadow-[0_0_8px_#ffd700]'
-                  : 'hover:scale-105 active:scale-95'
+                ? 'scale-115 drop-shadow-[0_0_8px_#ffd700]'
+                : 'hover:scale-105 active:scale-95'
                 }`}
             >
               <img
@@ -334,8 +467,8 @@ export default function FunTarget() {
               type="button"
               onClick={() => setSelectedChip(chip.value)}
               className={`relative z-10 h-[57px] w-[75px] cursor-pointer transition-transform duration-150 ${selectedChip === chip.value
-                  ? 'scale-115 drop-shadow-[0_0_8px_#ffd700]'
-                  : 'hover:scale-105 active:scale-95'
+                ? 'scale-115 drop-shadow-[0_0_8px_#ffd700]'
+                : 'hover:scale-105 active:scale-95'
                 }`}
             >
               <img
@@ -412,8 +545,8 @@ export default function FunTarget() {
               onClick={handleCancelBet}
               disabled={isBettingClosed || isSubmittingBet}
               className={`relative flex h-[40px] w-[260px] items-center justify-center transition ${isBettingClosed || isSubmittingBet
-                  ? 'cursor-not-allowed opacity-60'
-                  : 'cursor-pointer hover:brightness-110 active:scale-95'
+                ? 'cursor-not-allowed opacity-60'
+                : 'cursor-pointer hover:brightness-110 active:scale-95'
                 }`}
             >
               <img
@@ -445,8 +578,8 @@ export default function FunTarget() {
               onClick={handleBetOk}
               disabled={isBettingClosed || isSubmittingBet}
               className={`relative flex h-[38px] w-[190px] items-center justify-center transition ${isBettingClosed || isSubmittingBet
-                  ? 'cursor-not-allowed opacity-60'
-                  : 'cursor-pointer hover:brightness-110 active:scale-95'
+                ? 'cursor-not-allowed opacity-60'
+                : 'cursor-pointer hover:brightness-110 active:scale-95'
                 }`}
             >
               <img
@@ -484,8 +617,8 @@ export default function FunTarget() {
                   onClick={() => handleBet(num)}
                   disabled={isBettingClosed}
                   className={`group relative flex h-[76px] w-[112px] items-center justify-center transition-transform ${isBettingClosed
-                      ? 'cursor-not-allowed'
-                      : 'cursor-pointer hover:scale-105 active:scale-95'
+                    ? 'cursor-not-allowed'
+                    : 'cursor-pointer hover:scale-105 active:scale-95'
                     }`}
                 >
                   <img

@@ -1,62 +1,141 @@
-import React, { createContext, useCallback, useState } from 'react'
+import React, { createContext, useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
-export const AuthContext = createContext(null)
+import { disconnect, checkLoginToServer } from "../services/deviceSession";
+import { loginUser, getUserProfile } from "../services/auth.service";
+import { useWalletStore } from "../store/useWalletStore";
 
-const getStoredUser = () => {
-  try {
-    const username = localStorage.getItem('username')
-    const password = localStorage.getItem('password')
 
-    if (!username) return null
 
-    return {
-      id: 155,
-      username,
-      password,
-    }
-  } catch {
-    return null
-  }
-}
+export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(getStoredUser)
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback((userData) => {
-    setUser(userData)
+  const userProfile = useCallback(async (userId) => {
+    if (!userId) {
+      return null;
+    }
 
-    if (userData?.username) localStorage.setItem('username', userData.username)
-    if (userData?.password) localStorage.setItem('password', userData.password)
-  }, [])
+    try {
+      const response = await getUserProfile(userId);
 
-  const updateProfile = useCallback((profileData) => {
-    setUser((currentUser) => ({
-      ...currentUser,
-      ...profileData,
-    }))
-  }, [])
+      if (!response?.success || !response?.data) {
+        return response;
+      }
+
+      const profile = response.data;
+
+      setUser(profile);
+
+      localStorage.setItem("userId", String(profile.id));
+      
+
+      if (profile.wallet != null) {
+        useWalletStore.getState().setWallet(profile.wallet);
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      return null;
+    }
+  }, []);
+
+ const login = useCallback(
+  async ({ username, password }) => {
+    const response = await loginUser({
+      username,
+      password,
+    });
+
+    if (!response?.success) {
+      return response;
+    }
+
+    if (!response?.id) {
+      return {
+        success: false,
+        message: "User ID not received from server",
+      };
+    }
+    
+
+    const profileResponse = await userProfile(response.id);
+
+    if (!profileResponse?.success) {
+      return {
+        success: false,
+        message: "Unable to load user profile",
+      };
+    }
+
+    return response;
+  },
+  [userProfile],
+);
 
   const logout = useCallback(() => {
-    setUser(null)
-    localStorage.removeItem('username')
-    localStorage.removeItem('password')
-  }, [])
+    disconnect();
 
-  const userId = user?.id || (user?.username ? 155 : null)
-  const isAuthenticated = Boolean(user?.username)
+    setUser(null);
+
+    useWalletStore.getState().resetWallet();
+
+    localStorage.removeItem("userId");
+    localStorage.removeItem("username");
+  }, []);
+
+
+  useEffect(() => {
+    const initSession = async () => {
+      const storedUserId = localStorage.getItem("userId");
+
+      if (storedUserId) {
+        const response = await userProfile(storedUserId);
+
+        if (!response?.success) {
+          localStorage.removeItem("userId");
+          localStorage.removeItem("username");
+          setUser(null);
+        }
+      }
+
+      setIsLoading(false);
+    };
+
+    initSession();
+  }, [userProfile]);
+
+
+  //socket
+  useEffect(() => {
+  if (!user?.id) {
+    disconnect();
+    return;
+  }
+
+  checkLoginToServer(() => {
+    logout();
+
+    toast.error(
+      "You have been logged out because your account was logged in on another browser.",
+    );
+  });
+
+  return () => {
+    disconnect();
+  };
+}, [user?.id, logout]);
 
   const value = {
     user,
-    userId,
-    isAuthenticated,
+    isLoading,
     login,
-    updateProfile,
     logout,
-  }
+    userProfile,
+  };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

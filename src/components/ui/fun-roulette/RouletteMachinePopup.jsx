@@ -6,7 +6,13 @@ import { playRouletteWheelSound, stopRouletteWheelSound, stopTickSound } from '.
 import { ROULETTE_NUMBERS } from '../../../constants/funRouletteData'
 import { speak } from '../../../utils/audio'
 
-export default function RouletteMachinePopup({ isOpen, onClose, onResult }) {
+export default function RouletteMachinePopup({
+  isOpen,
+  onClose,
+  onResult,
+  targetNumber,
+  targetIndex,
+}) {
   const [wheelAngle, setWheelAngle] = useState(0)
   const [ballAngle, setBallAngle] = useState(0)
   const [isStopped, setIsStopped] = useState(false)
@@ -26,21 +32,38 @@ export default function RouletteMachinePopup({ isOpen, onClose, onResult }) {
     stopTickSound()
     playRouletteWheelSound()
 
-    const randomIdx = Math.floor(
-  Math.random() * ROULETTE_NUMBERS.length
-)
+    let targetIdx = -1
 
-const winnerNumber = ROULETTE_NUMBERS[randomIdx]
+    if (targetIndex !== undefined && targetIndex !== null && Number.isInteger(Number(targetIndex))) {
+      const idx = Number(targetIndex)
+      if (idx >= 0 && idx < ROULETTE_NUMBERS.length) {
+        targetIdx = idx
+      }
+    }
 
-const POCKET_COUNT = ROULETTE_NUMBERS.length
-const POCKET_ANGLE = 360 / POCKET_COUNT
+    if (targetIdx === -1 && targetNumber !== undefined && targetNumber !== null) {
+      const searchNum = String(targetNumber).trim()
+      const foundIdx = ROULETTE_NUMBERS.findIndex((n) => String(n).trim() === searchNum)
+      if (foundIdx !== -1) {
+        targetIdx = foundIdx
+      }
+    }
 
-const WHEEL_OFFSET = -POCKET_ANGLE
+    if (targetIdx === -1) {
+      targetIdx = Math.floor(Math.random() * ROULETTE_NUMBERS.length)
+    }
 
-const pocketOffset =
-  randomIdx * POCKET_ANGLE +
-  POCKET_ANGLE / 2 +
-  WHEEL_OFFSET
+    const winnerNumber = ROULETTE_NUMBERS[targetIdx]
+
+    const POCKET_COUNT = ROULETTE_NUMBERS.length
+    const POCKET_ANGLE = 360 / POCKET_COUNT
+
+    const WHEEL_OFFSET = -POCKET_ANGLE
+
+    const pocketOffset =
+      targetIdx * POCKET_ANGLE +
+      POCKET_ANGLE / 2 +
+      WHEEL_OFFSET
 
     const totalWheelSpins = 6
     const totalBallSpins = 13
@@ -82,7 +105,7 @@ const pocketOffset =
 
         onResult?.({
           number: winnerNumber,
-          index: randomIdx,
+          index: targetIdx,
         })
       }
     }
@@ -93,16 +116,16 @@ const pocketOffset =
       if (animRef.current) cancelAnimationFrame(animRef.current)
       stopRouletteWheelSound()
     }
-  }, [isOpen])
+  }, [isOpen, targetNumber, targetIndex])
 
   if (!isOpen) return null
 
   return (
-    <div 
+    <div
       className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] transition-opacity duration-300"
       onClick={onClose}
     >
-      <div 
+      <div
         className="relative flex flex-col items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >

@@ -121,11 +121,6 @@ export const getChipAsset = (value) => {
   return CHIP_IMAGES[value] || CHIP_IMAGES[2]
 }
 
-/**
- * Placed chip component matching the exact table perspective:
- * - Lies completely flat on the felt table
- * - Formatted to cover the red/black oval number area
- */
 export function PlacedChip({
   amount,
   chipValue,

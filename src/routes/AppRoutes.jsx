@@ -9,16 +9,22 @@ import FunRoulette from '../pages/fun-roulette/FunRoulette'
 import RouletteMiniTimer from '../pages/roulette-mini-timer/RouletteMiniTimer'
 import FunTarget from '../pages/fun-target/FunTarget'
 import SplashPage from '../components/common/SplashPage'
+import PayHistoryPage from '../pages/pay-history/PayHistoryPage'
+import PointHistoryPage from '../pages/point-history/PointHistoryPage'
+
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<SplashPage />} />
+     
 
       <Route path="/login" element={<Login />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/pay-history" element={<PayHistoryPage />} />
+        <Route path="/point-history" element={<PointHistoryPage />} />
         <Route path="/fun-roulette" element={<FunRoulette />} />
         <Route path="/roulette-mini-timer" element={<RouletteMiniTimer />} />
         <Route path="/fun-target" element={<FunTarget />} />

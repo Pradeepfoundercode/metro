@@ -27,7 +27,7 @@ export default function SplashPage() {
   const [progress, setProgress] = useState(0)
 
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const { user } = useAuth()
 
   useEffect(() => {
     let mounted = true
@@ -81,7 +81,7 @@ export default function SplashPage() {
 
     const timer = setTimeout(() => {
       navigate(
-        isAuthenticated
+        user?.id
           ? '/dashboard'
           : '/login',
         {
@@ -95,7 +95,7 @@ export default function SplashPage() {
     }
   }, [
     progress,
-    isAuthenticated,
+    user,
     navigate,
   ])
 

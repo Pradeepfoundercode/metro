@@ -21,7 +21,7 @@ export default function GameHistoryPopup({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[3px] transition-opacity duration-200 select-none"
+      className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[3px] transition-opacity duration-200 select-none"
       onClick={onClose}
     >
       <div
@@ -77,48 +77,30 @@ export default function GameHistoryPopup({
           </div>
 
           <div className="flex flex-col">
-            {displayHistory.map((row, index) => {
-              const resultVal =
-                row.result !== undefined ? row.result : row.ballPosition
-              const isResultPresent =
-                resultVal !== '-' &&
-                resultVal !== null &&
-                resultVal !== undefined
+           {displayHistory.map((row, index) => {
+  const resultVal = row.win_number ?? '-'
+  const hasWon = Number(row.win_amount) > 0
 
-              const hasWon = Number(row.won) > 0
+  return (
+    <div
+      key={row.id || index}
+      className="grid grid-cols-5 border-b border-white/25 py-2.5 text-center text-[17px] font-bold text-white"
+    >
+      <div>{index + 1}</div>
+      <div>{row.games_no}</div>
 
-              return (
-                <div
-                  key={`${row.gameNo}-${index}`}
-                  className="grid grid-cols-5 border-b border-white/25 py-2.5 text-center text-[17px] font-bold text-white transition hover:bg-white/5"
-                >
-                  <div>{row.no || index + 1}</div>
-                  <div>{row.gameNo}</div>
+      <div className="text-[#ffe600]">
+        {resultVal}
+      </div>
 
-                  <div
-                    className={
-                      isResultPresent
-                        ? 'text-[18px] font-black text-[#ffe600]'
-                        : 'text-white/80'
-                    }
-                  >
-                    {resultVal}
-                  </div>
+      <div>{row.amount}</div>
 
-                  <div>{row.play}</div>
-
-                  <div
-                    className={
-                      hasWon
-                        ? 'text-[18px] font-black text-[#39ff14]'
-                        : 'text-white'
-                    }
-                  >
-                    {row.won}
-                  </div>
-                </div>
-              )
-            })}
+      <div className={hasWon ? 'text-[#39ff14]' : 'text-white'}>
+        {row.win_amount}
+      </div>
+    </div>
+  )
+})}
           </div>
 
           <div className="flex-1" />
