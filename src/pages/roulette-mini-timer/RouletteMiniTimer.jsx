@@ -670,10 +670,10 @@ function RouletteMiniTimer() {
       }
     };
 
-    socket.on("ncr_blue36", handleTimer);
+    socket.on(import.meta.env.VITE_MINITIMER_EVENT_NAME, handleTimer);
 
     return () => {
-      socket.off("ncr_blue36", handleTimer);
+     socket.off(import.meta.env.VITE_MINITIMER_EVENT_NAME, handleTimer);
     };
   }, []);
 

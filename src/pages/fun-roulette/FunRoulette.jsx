@@ -59,6 +59,7 @@ import socket from '../../services/socket.service.js'
 
 
 
+
 const MIN_10_BET_SPOTS = [
   '00',
   '1ST12',
@@ -127,6 +128,7 @@ export default function FunRoulette() {
 
   const [historyList, setHistoryList] = useState([])
   const [historyData, setHistoryData] = useState([])
+  
 
    
 
@@ -246,10 +248,10 @@ useEffect(() => {
     }
   };
 
-  socket.on('ncr_green36', handleTimer);
+  socket.on(import.meta.env.VITE_TIMER_EVENT_NAME, handleTimer);
 
   return () => {
-    socket.off('ncr_green36', handleTimer);
+    socket.off(import.meta.env.VITE_TIMER_EVENT_NAME, handleTimer);
   };
 }, [user?.id]);
 
