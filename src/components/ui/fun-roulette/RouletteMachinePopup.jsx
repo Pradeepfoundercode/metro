@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import rouletteBg from '../../../assets/bg.png'
 import wheelBlack from '../../../assets/wheel_black.png'
-import diamondImg from '../../../assets/roulette/wheel_diamond.png'
+import diamondImg from '../../../assets/diamond.gif'
 import { playRouletteWheelSound, stopRouletteWheelSound, stopTickSound } from '../../../utils/sound'
 import { ROULETTE_NUMBERS } from '../../../constants/funRouletteData'
 import { speak } from '../../../utils/audio'

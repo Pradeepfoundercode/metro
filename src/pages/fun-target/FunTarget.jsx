@@ -243,7 +243,12 @@ export default function FunTarget() {
     spinTimeoutRef.current = setTimeout(() => {
       stopMoveChakraSound()
       setIsSpinning(false)
-      setWinnerNumber(pendingWinAmountRef.current ?? 0)
+      const winAmount = Number(pendingWinAmountRef.current ?? 0)
+      setWinnerNumber(winAmount)
+      if (winAmount > 0) {
+        addWallet(winAmount)
+      }
+      pendingWinAmountRef.current = 0
       speak(`Winning number is ${nextWinner}`)
 
       if (pendingLast10Ref.current && pendingLast10Ref.current.length > 0) {

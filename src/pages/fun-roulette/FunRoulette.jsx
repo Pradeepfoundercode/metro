@@ -101,7 +101,7 @@ export default function FunRoulette() {
   const [showWaitToComplete, setShowWaitToComplete] = useState(false)
 
   const [timeLeft, setTimeLeft] = useState(0)
-  const [timerStatus , setTimerStatus] = useState(1)
+  const [timerStatus, setTimerStatus] = useState(1)
   const initialTimeRef = useRef(timeLeft)
   const previousTimerStatusRef = useRef(null);
   const lastKnownGameNoRef = useRef(null);
@@ -128,142 +128,143 @@ export default function FunRoulette() {
 
   const [historyList, setHistoryList] = useState([])
   const [historyData, setHistoryData] = useState([])
-  
-
-   
 
 
-useEffect(() => {
-  const handleTimer = (data) => {
-    let parsedData = data;
 
-    if (typeof data === 'string') {
-      try {
-        parsedData = JSON.parse(data);
-      } catch (error) {
-        console.error('Socket timer parse error:', error);
-        return;
-      }
-    }
 
-    if (!parsedData) return;
 
-    const { timerBetTime, timerStatus } = parsedData;
+  useEffect(() => {
+    const handleTimer = (data) => {
+      let parsedData = data;
 
-    if (timerStatus === undefined) return;
-
-    const status = Number(timerStatus);
-    const previousStatus = previousTimerStatusRef.current;
-
-    setTimerStatus(status);
-
-    // Timer har second update hoga
-    if (timerBetTime !== undefined) {
-      const timeVal = Number(timerBetTime);
-      setTimeLeft(timeVal);
-
-      // Agar timer 10 aur timerstatus 1 ho, aur bets pehle se manually confirm na hui ho, to auto-confirm chalega
-      if (status === 1 && timeVal <= 10 && !autoBetSubmittedRef.current) {
-        if (betHistoryRef.current?.length > 0 && !isLockedRef.current) {
-          autoBetSubmittedRef.current = true;
-          handleBetOkRef.current?.();
+      if (typeof data === 'string') {
+        try {
+          parsedData = JSON.parse(data);
+        } catch (error) {
+          console.error('Socket timer parse error:', error);
+          return;
         }
       }
-    }
 
-    console.log('Timer:', {
-      timerBetTime,
-      status,
-      previousStatus,
-    });
+      if (!parsedData) return;
 
-    // Sirf status change hone par actions chalenge
-    if (status !== previousStatus) {
-      previousTimerStatusRef.current = status;
+      const { timerBetTime, timerStatus } = parsedData;
 
-      if (status === 2) {
-        // Betting phase khatam:
-        setBets({});
-        setBetHistory([]);
-        setShowWaitToComplete(false);
-        setShowGreaterThan10(false);
-        setShowBetAccepted(false);
-        setShowPlaceYourBets(true);
+      if (timerStatus === undefined) return;
 
-        (async () => {
-          let winItem = null;
-          try {
-            const res = await getFunRouletteLast13Result(user?.id);
-            if (res?.last_win_amount !== undefined && res?.last_win_amount !== null) {
-              pendingWinAmountRef.current = res.last_win_amount;
-            } else {
-              pendingWinAmountRef.current = 0;
-            }
-            const resultData = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      const status = Number(timerStatus);
+      const previousStatus = previousTimerStatusRef.current;
 
-            if (resultData.length > 0) {
-              // Jo number data me last me aayga uspr ball rukni chahiye
-              const lastItem = resultData[resultData.length - 1];
-              winItem = {
-                number: String(lastItem?.number),
-                index: lastItem?.index !== undefined && lastItem?.index !== null ? Number(lastItem.index) : null,
-              };
+      setTimerStatus(status);
 
-              const lastNo = Number(lastItem?.games_no || lastItem?.game_no);
-              if (Number.isFinite(lastNo) && lastNo > 0) {
-                lastKnownGameNoRef.current = String(lastNo + 1);
-              }
+      // Timer har second update hoga
+      if (timerBetTime !== undefined) {
+        const timeVal = Number(timerBetTime);
+        setTimeLeft(timeVal);
 
-              const lastFiveResults = resultData
-                .slice(-5)
-                .map((item) => String(item.number));
-
-              pendingHistoryListRef.current = lastFiveResults;
-            }
-          } catch (error) {
-            console.error('Failed to fetch roulette results on status 2:', error);
+        // Agar timer 10 aur timerstatus 1 ho, aur bets pehle se manually confirm na hui ho, to auto-confirm chalega
+        if (status === 1 && timeVal <= 10 && !autoBetSubmittedRef.current) {
+          if (betHistoryRef.current?.length > 0 && !isLockedRef.current) {
+            autoBetSubmittedRef.current = true;
+            handleBetOkRef.current?.();
           }
-
-          setTargetWinning(winItem);
-          setIsPopupOpen(true);
-        })();
-      }
-
-      if (status === 1) {
-        // Naya betting phase: sirf ek baar
-        autoBetSubmittedRef.current = false;
-        setIsPopupOpen(false);
-        setTargetWinning(null);
-        setShowWaitToComplete(false);
-        setShowGreaterThan10(false);
-        setIsLocked(false);
-        isLockedRef.current = false;
-        setShowPlaceYourBets(true);
-
-        if (pendingHistoryListRef.current) {
-          setHistoryList(pendingHistoryListRef.current);
-          pendingHistoryListRef.current = null;
         }
       }
-    }
-  };
 
-  socket.on(import.meta.env.VITE_TIMER_EVENT_NAME, handleTimer);
+      console.log('Timer:', {
+        timerBetTime,
+        status,
+        previousStatus,
+      });
 
-  return () => {
-    socket.off(import.meta.env.VITE_TIMER_EVENT_NAME, handleTimer);
-  };
-}, [user?.id]);
+      // Sirf status change hone par actions chalenge
+      if (status !== previousStatus) {
+        previousTimerStatusRef.current = status;
+
+        if (status === 2) {
+          // Betting phase khatam:
+          setBets({});
+          setBetHistory([]);
+          setShowWaitToComplete(false);
+          setShowGreaterThan10(false);
+          setShowBetAccepted(false);
+          setShowPlaceYourBets(true);
+
+          (async () => {
+            let winItem = null;
+            try {
+              const res = await getFunRouletteLast13Result(user?.id);
+              if (res?.last_win_amount !== undefined && res?.last_win_amount !== null) {
+                pendingWinAmountRef.current = res.last_win_amount;
+
+              } else {
+                pendingWinAmountRef.current = 0;
+              }
+              const resultData = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+
+              if (resultData.length > 0) {
+                // Jo number data me last me aayga uspr ball rukni chahiye
+                const lastItem = resultData[resultData.length - 1];
+                winItem = {
+                  number: String(lastItem?.number),
+                  index: lastItem?.index !== undefined && lastItem?.index !== null ? Number(lastItem.index) : null,
+                };
+
+                const lastNo = Number(lastItem?.games_no || lastItem?.game_no);
+                if (Number.isFinite(lastNo) && lastNo > 0) {
+                  lastKnownGameNoRef.current = String(lastNo + 1);
+                }
+
+                const lastFiveResults = resultData
+                  .slice(-5)
+                  .map((item) => String(item.number));
+
+                pendingHistoryListRef.current = lastFiveResults;
+              }
+            } catch (error) {
+              console.error('Failed to fetch roulette results on status 2:', error);
+            }
+
+            setTargetWinning(winItem);
+            setIsPopupOpen(true);
+          })();
+        }
+
+        if (status === 1) {
+          // Naya betting phase: sirf ek baar
+          autoBetSubmittedRef.current = false;
+          setIsPopupOpen(false);
+          setTargetWinning(null);
+          setShowWaitToComplete(false);
+          setShowGreaterThan10(false);
+          setIsLocked(false);
+          isLockedRef.current = false;
+          setShowPlaceYourBets(true);
+
+          if (pendingHistoryListRef.current) {
+            setHistoryList(pendingHistoryListRef.current);
+            pendingHistoryListRef.current = null;
+          }
+        }
+      }
+    };
+
+    socket.on(import.meta.env.VITE_TIMER_EVENT_NAME, handleTimer);
+
+    return () => {
+      socket.off(import.meta.env.VITE_TIMER_EVENT_NAME, handleTimer);
+    };
+  }, [user?.id]);
 
 
-    // console.log(timeLeft, "timeLeft")
-    // console.log(timerStatus, "timerStatus")
+  // console.log(timeLeft, "timeLeft")
+  // console.log(timerStatus, "timerStatus")
 
 
 
-   useEffect(() => {
+  useEffect(() => {
     if (!user?.id) return
-  
+
     const fetchHistory = async () => {
       try {
         const res = await getFunRouletteBetHistory(user.id)
@@ -272,49 +273,50 @@ useEffect(() => {
         console.log(error)
       }
     }
-  
+
     fetchHistory()
   }, [user?.id])
 
 
-const fetchLatestRouletteResults = async () => {
-  if (!user?.id) return;
+  const fetchLatestRouletteResults = async () => {
+    if (!user?.id) return;
 
-  try {
-    const res = await getFunRouletteLast13Result(user.id);
-    if (res?.last_win_amount !== undefined && res?.last_win_amount !== null) {
-      setWinnerNumber(res.last_win_amount);
-      pendingWinAmountRef.current = res.last_win_amount;
-    }
-    const resultData = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    try {
+      const res = await getFunRouletteLast13Result(user.id);
+      if (res?.last_win_amount !== undefined && res?.last_win_amount !== null) {
+        setWinnerNumber(res.last_win_amount);
 
-    if (resultData.length > 0) {
-      const lastItem = resultData[resultData.length - 1];
-      const lastNo = Number(lastItem?.games_no || lastItem?.game_no);
-      if (Number.isFinite(lastNo) && lastNo > 0) {
-        lastKnownGameNoRef.current = String(lastNo + 1);
+        pendingWinAmountRef.current = res.last_win_amount;
       }
+      const resultData = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
 
-      const lastFiveResults = resultData
-        .slice(-5)
-        .map((item) => String(item.number));
+      if (resultData.length > 0) {
+        const lastItem = resultData[resultData.length - 1];
+        const lastNo = Number(lastItem?.games_no || lastItem?.game_no);
+        if (Number.isFinite(lastNo) && lastNo > 0) {
+          lastKnownGameNoRef.current = String(lastNo + 1);
+        }
 
-      setHistoryList(lastFiveResults);
+        const lastFiveResults = resultData
+          .slice(-5)
+          .map((item) => String(item.number));
+
+        setHistoryList(lastFiveResults);
+      }
+    } catch (error) {
+      console.error('Failed to fetch roulette results:', error);
     }
-  } catch (error) {
-    console.error('Failed to fetch roulette results:', error);
-  }
-};
+  };
 
-useEffect(() => {
-  if (!user?.id) return;
+  useEffect(() => {
+    if (!user?.id) return;
 
-  fetchLatestRouletteResults();
-}, [user?.id]);
+    fetchLatestRouletteResults();
+  }, [user?.id]);
 
 
-  
-  
+
+
 
   const totalBet = Object.values(bets).reduce(
     (total, amount) => total + amount,
@@ -326,132 +328,132 @@ useEffect(() => {
   }, [])
 
   useEffect(() => {
-  if (timeLeft === 20 && !isPopupOpen) {
-    speak('Last call')
+    if (timeLeft === 20 && !isPopupOpen) {
+      speak('Last call')
+    }
+  }, [timeLeft, isPopupOpen])
+
+  const handlePlaceBet = (spot) => {
+    if (isLocked || !selectedChip) {
+      return
+    }
+
+
+    if (timeLeft <= 10) {
+      setShowWaitToComplete(true)
+      speak('Please wait to complete Last Game')
+      return
+    }
+
+    const requiresMinimum10 = MIN_10_BET_SPOTS.includes(spot)
+
+    if (requiresMinimum10 && selectedChip < 10) {
+      setShowGreaterThan10(true)
+      speak('greater than 10 rupees')
+      return
+    }
+
+    setShowGreaterThan10(false)
+    setShowWaitToComplete(false)
+
+    // Balance insufficient => bet nahi lagega
+    if (wallet < selectedChip) {
+      return
+    }
+
+    deductWallet(selectedChip)
+    playCoinSplashSound()
+    setBets((prev) => ({
+      ...prev,
+      [spot]: (prev[spot] || 0) + selectedChip,
+    }))
+
+    setBetHistory((prev) => [
+      ...prev,
+      {
+        spot,
+        amount: selectedChip,
+      },
+    ])
   }
-}, [timeLeft, isPopupOpen])
-
- const handlePlaceBet = (spot) => {
-  if (isLocked || !selectedChip) {
-    return
-  }
-
-  
-  if (timeLeft <= 10) {
-  setShowWaitToComplete(true)
-  speak('Please wait to complete Last Game')
-  return
-}
-
-  const requiresMinimum10 = MIN_10_BET_SPOTS.includes(spot)
-
-  if (requiresMinimum10 && selectedChip < 10) {
-    setShowGreaterThan10(true)
-     speak('greater than 10 rupees')
-    return
-  }
-
-  setShowGreaterThan10(false)
-  setShowWaitToComplete(false)
-
-  // Balance insufficient => bet nahi lagega
-  if (wallet < selectedChip) {
-    return
-  }
-
-  deductWallet(selectedChip)
-playCoinSplashSound()
-  setBets((prev) => ({
-    ...prev,
-    [spot]: (prev[spot] || 0) + selectedChip,
-  }))
-
-  setBetHistory((prev) => [
-    ...prev,
-    {
-      spot,
-      amount: selectedChip,
-    },
-  ])
-}
 
   const handleSpecificCancelBet = () => {
-  if (isLocked) {
-    return
-  }
-
-  if (timeLeft <= 10) {
-    speak("You can not cancel bets in the last 10 seconds")
-    toast.error("You can't cancel bets in the last 10 seconds")
-    return
-  }
-
-  if (betHistory.length === 0) {
-    return
-  }
-
-  const lastBet =
-    betHistory[betHistory.length - 1]
-
-  setBetHistory((prev) =>
-    prev.slice(0, -1)
-  )
-
-  addWallet(lastBet.amount)
-
-  setBets((prev) => {
-    const currentAmount =
-      prev[lastBet.spot] || 0
-
-    const updatedAmount =
-      currentAmount - lastBet.amount
-
-    const nextBets = {
-      ...prev,
+    if (isLocked) {
+      return
     }
 
-    if (updatedAmount <= 0) {
-      delete nextBets[lastBet.spot]
-    } else {
-      nextBets[lastBet.spot] =
-        updatedAmount
+    if (timeLeft <= 10) {
+      speak("You can not cancel bets in the last 10 seconds")
+      toast.error("You can't cancel bets in the last 10 seconds")
+      return
     }
 
-    return nextBets
-  })
+    if (betHistory.length === 0) {
+      return
+    }
 
-  // setStatusMessage('Last bet cancelled')
-}
+    const lastBet =
+      betHistory[betHistory.length - 1]
 
- const handleCancelBet = () => {
-  if (isLocked) {
-    return
+    setBetHistory((prev) =>
+      prev.slice(0, -1)
+    )
+
+    addWallet(lastBet.amount)
+
+    setBets((prev) => {
+      const currentAmount =
+        prev[lastBet.spot] || 0
+
+      const updatedAmount =
+        currentAmount - lastBet.amount
+
+      const nextBets = {
+        ...prev,
+      }
+
+      if (updatedAmount <= 0) {
+        delete nextBets[lastBet.spot]
+      } else {
+        nextBets[lastBet.spot] =
+          updatedAmount
+      }
+
+      return nextBets
+    })
+
+    // setStatusMessage('Last bet cancelled')
   }
 
-  if (timeLeft <= 10) {
-    speak("You can not cancel bets in the last 10 seconds")
-    toast.error("You can't cancel bets in the last 10 seconds")
-    return
+  const handleCancelBet = () => {
+    if (isLocked) {
+      return
+    }
+
+    if (timeLeft <= 10) {
+      speak("You can not cancel bets in the last 10 seconds")
+      toast.error("You can't cancel bets in the last 10 seconds")
+      return
+    }
+
+    if (betHistory.length === 0) {
+      return
+    }
+
+    const refundAmount = betHistory.reduce(
+      (total, bet) => total + bet.amount,
+      0
+    )
+
+    setBetHistory([])
+    setBets({})
+
+    addWallet(refundAmount)
+
+    // setStatusMessage(
+    //   `All bets cancelled: ${refundAmount} refunded`
+    // )
   }
-
-  if (betHistory.length === 0) {
-    return
-  }
-
-  const refundAmount = betHistory.reduce(
-    (total, bet) => total + bet.amount,
-    0
-  )
-
-  setBetHistory([])
-  setBets({})
-
-  addWallet(refundAmount)
-
-  // setStatusMessage(
-  //   `All bets cancelled: ${refundAmount} refunded`
-  // )
-}
 
   useEffect(() => {
     betHistoryRef.current = betHistory;
@@ -553,34 +555,33 @@ playCoinSplashSound()
   }
 
   const renderChipBadge = (spot, small = false) => {
-  const value = bets[spot]
+    const value = bets[spot]
 
-  if (!value) {
-    return null
-  }
+    if (!value) {
+      return null
+    }
 
-  return (
-    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-      <div className="relative flex items-center justify-center">
-        <img
-          src={getChipAsset(value)}
-          alt="chip"
-          className={`${small ? 'h-10.5 w-10.5' : 'h-13 w-13'} object-fill drop-shadow`}
-        />
+    return (
+      <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+        <div className="relative flex items-center justify-center">
+          <img
+            src={getChipAsset(value)}
+            alt="chip"
+            className={`${small ? 'h-10.5 w-10.5' : 'h-13 w-13'} object-fill drop-shadow`}
+          />
 
-        <span
-          className={`absolute font-inter font-semibold  ${
-            small
-              ? 'text-[24px]'
-              : 'text-[28px]'
-          }`}
-        >
-          {value}
-        </span>
+          <span
+            className={`absolute font-inter font-semibold  ${small
+                ? 'text-[24px]'
+                : 'text-[28px]'
+              }`}
+          >
+            {value}
+          </span>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
 
 
@@ -642,10 +643,10 @@ playCoinSplashSound()
             <div className="relative flex w-full items-center justify-center">
 
               <img
-  src={scoreHd}
-  alt="Score"
-  className="h-[85px] w-[240%] object-fill"
-/>
+                src={scoreHd}
+                alt="Score"
+                className="h-[85px] w-[240%] object-fill"
+              />
 
               <div className="absolute bottom-[20%] left-0 right-0 flex items-center justify-center">
 
@@ -661,128 +662,126 @@ playCoinSplashSound()
 
             <div className="relative mt-[5%] ml-[7%] flex w-[78%] items-center justify-center">
 
-  <img
-    src={noblink}
-    alt="Time Left"
-    className="w-[110%] h-[75px] object-fill"
-  />
+              <img
+                src={noblink}
+                alt="Time Left"
+                className="w-[110%] h-[75px] object-fill"
+              />
 
-  {/* Top & Bottom Blinking Border (Dip-Dip) when timeLeft <= 20 */}
-  {timeLeft <= 20 && (
-    <div className="pointer-events-none absolute inset-x-[7%] top-[7%] bottom-[34%] border-t-[5px] border-b-[5px] rounded-[4px] flash-border w-[85%]" />
-  )}
+              {/* Top & Bottom Blinking Border (Dip-Dip) when timeLeft <= 20 */}
+              {timeLeft <= 20 && (
+                <div className="pointer-events-none absolute inset-x-[7%] top-[7%] bottom-[34%] border-t-[5px] border-b-[5px] rounded-[4px] flash-border w-[85%]" />
+              )}
 
-  <span className="absolute  whitespace-nowrap text-[18px] top-4 font-bold tracking-wide text-white drop-shadow">
-    Time Left: {timeLeft}
-  </span>
+              <span className="absolute  whitespace-nowrap text-[18px] top-4 font-bold tracking-wide text-white drop-shadow">
+                Time Left: {timeLeft}
+              </span>
 
-</div>
+            </div>
 
             {/* CHIPS */}
 
-           <div className="mt-[4%] flex w-full flex-col gap-2">
+            <div className="mt-[4%] flex w-full flex-col gap-2">
 
-  <div className="flex items-center justify-center gap-2">
-    {CHIPS.slice(0, 4).map((chip) => (
-      <button
-        key={chip.value}
-        type="button"
-        onClick={() => setSelectedChip(chip.value)}
-        style={{
-          '--chip-glow': CHIP_GLOW_COLORS[chip.value],
-        }}
-        className="relative w-[22%] cursor-pointer transition-transform duration-200 hover:scale-105"
-      >
-        <img
-          src={chip.img}
-          alt={`chip ${chip.value}`}
-          className={`h-auto w-full object-contain ${
-            selectedChip === chip.value
-              ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
-              : ''
-          }`}
-        />
-      </button>
-    ))}
-  </div>
+              <div className="flex items-center justify-center gap-2">
+                {CHIPS.slice(0, 4).map((chip) => (
+                  <button
+                    key={chip.value}
+                    type="button"
+                    onClick={() => setSelectedChip(chip.value)}
+                    style={{
+                      '--chip-glow': CHIP_GLOW_COLORS[chip.value],
+                    }}
+                    className="relative w-[22%] cursor-pointer transition-transform duration-200 hover:scale-105"
+                  >
+                    <img
+                      src={chip.img}
+                      alt={`chip ${chip.value}`}
+                      className={`h-auto w-full object-contain ${selectedChip === chip.value
+                          ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
+                          : ''
+                        }`}
+                    />
+                  </button>
+                ))}
+              </div>
 
-  <div className="flex items-center justify-center gap-2">
-    {CHIPS.slice(4, 8).map((chip) => (
-      <button
-        key={chip.value}
-        type="button"
-        onClick={() => setSelectedChip(chip.value)}
-        style={{
-          '--chip-glow': CHIP_GLOW_COLORS[chip.value],
-        }}
-        className="relative w-[22%] cursor-pointer transition-transform duration-200 hover:scale-105"
-      >
-        <img
-          src={chip.img}
-          alt={`chip ${chip.value}`}
-          className={`h-auto w-full object-contain ${
-            selectedChip === chip.value
-              ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
-              : ''
-          }`}
-        />
-      </button>
-    ))}
-  </div>
+              <div className="flex items-center justify-center gap-2">
+                {CHIPS.slice(4, 8).map((chip) => (
+                  <button
+                    key={chip.value}
+                    type="button"
+                    onClick={() => setSelectedChip(chip.value)}
+                    style={{
+                      '--chip-glow': CHIP_GLOW_COLORS[chip.value],
+                    }}
+                    className="relative w-[22%] cursor-pointer transition-transform duration-200 hover:scale-105"
+                  >
+                    <img
+                      src={chip.img}
+                      alt={`chip ${chip.value}`}
+                      className={`h-auto w-full object-contain ${selectedChip === chip.value
+                          ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
+                          : ''
+                        }`}
+                    />
+                  </button>
+                ))}
+              </div>
 
-</div>
+            </div>
 
           </div>
 
           {/* CENTER */}
 
-        <div className="absolute left-1/2 top-0 z-50 flex w-[34%] -translate-x-1/2 flex-col items-center">
+          <div className="absolute left-1/2 top-0 z-50 flex w-[34%] -translate-x-1/2 flex-col items-center">
 
-  {/* FUN ROULETTE BANNER */}
+            {/* FUN ROULETTE BANNER */}
 
-  <img
-    src={funRouletteBanner}
-    alt="Fun Roulette"
-    className="h-[95px] w-[300%] object-fill"
-  />
+            <img
+              src={funRouletteBanner}
+              alt="Fun Roulette"
+              className="h-[95px] w-[300%] object-fill"
+            />
 
-  {/* ROULETTE MACHINE */}
+            {/* ROULETTE MACHINE */}
 
-  <div className="relative mt-[6%] flex w-full items-center justify-center">
-    <img
-      src={rouletteMachine}
-      alt="Roulette Wheel"
-      className="h-[300px] w-[500px] object-fill drop-shadow-[0_8px_18px_rgba(0,0,0,0.9)]"
-    />
-  </div>
+            <div className="relative mt-[6%] flex w-full items-center justify-center">
+              <img
+                src={rouletteMachine}
+                alt="Roulette Wheel"
+                className="h-[300px] w-[500px] object-fill drop-shadow-[0_8px_18px_rgba(0,0,0,0.9)]"
+              />
+            </div>
 
-  {/* PLACE YOUR BETS */}
+            {/* PLACE YOUR BETS */}
 
-  <div className="relative -mt-[2px] flex w-[85%] items-center justify-center">
-  {(showBetAccepted ||
-    showWaitToComplete ||
-    showGreaterThan10 ||
-    showPlaceYourBets ||
-    timeLeft === 20) && (
-    <img
-      src={
-        showBetAccepted
-          ? betsAccepted
-          : showWaitToComplete
-            ? waitToComplete
-            : showGreaterThan10
-              ? greaterThan10Rs
-              : timeLeft === 20
-                ? lastCall
-                : placeYourBets
-      }
-      alt="Bet Message"
-      className="h-[30px] w-full object-fill"
-    />
-  )}
-</div>
+            <div className="relative -mt-[2px] flex w-[85%] items-center justify-center">
+              {(showBetAccepted ||
+                showWaitToComplete ||
+                showGreaterThan10 ||
+                showPlaceYourBets ||
+                timeLeft === 20) && (
+                  <img
+                    src={
+                      showBetAccepted
+                        ? betsAccepted
+                        : showWaitToComplete
+                          ? waitToComplete
+                          : showGreaterThan10
+                            ? greaterThan10Rs
+                            : timeLeft === 20
+                              ? lastCall
+                              : placeYourBets
+                    }
+                    alt="Bet Message"
+                    className="h-[30px] w-full object-fill"
+                  />
+                )}
+            </div>
 
-</div>
+          </div>
 
           {/* WINNER / RIGHT */}
 
@@ -839,14 +838,13 @@ playCoinSplashSound()
                     return (
                       <span
                         key={`${value}-${index}`}
-                        className={`text-[17px]  font-black drop-shadow ${
-                          value === '0' ||
-                          value === '00'
+                        className={`text-[17px]  font-black drop-shadow ${value === '0' ||
+                            value === '00'
                             ? 'text-[#39ff14]'
                             : isRed
                               ? 'text-[#ff3b30]'
                               : 'text-white'
-                        }`}
+                          }`}
                       >
                         {value}
                       </span>
@@ -863,15 +861,14 @@ playCoinSplashSound()
             <div className="mt-[1.5%] flex w-full flex-col items-end gap-[2%]">
 
               <button
-  type="button"
-  onClick={handleBetOk}
-  disabled={isLocked}
-  className={`relative mr-[8%] flex w-[80%] items-center justify-center transition ${
-    isLocked
-      ? 'cursor-not-allowed opacity-60'
-      : 'cursor-pointer hover:brightness-110 active:scale-95'
-  }`}
->
+                type="button"
+                onClick={handleBetOk}
+                disabled={isLocked}
+                className={`relative mr-[8%] flex w-[80%] items-center justify-center transition ${isLocked
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'cursor-pointer hover:brightness-110 active:scale-95'
+                  }`}
+              >
 
                 <img
                   src={extraRight}
@@ -939,7 +936,7 @@ playCoinSplashSound()
             BETTING GRID
         ========================= */}
 
-       <div className="absolute left-[3.5%] right-[4.5%] top-[50.5%] z-40">
+        <div className="absolute left-[3.5%] right-[4.5%] top-[50.5%] z-40">
 
           <div className="relative aspect-[936/209] w-full">
 
@@ -971,7 +968,7 @@ playCoinSplashSound()
                   00
                 </span>
 
-               
+
 
                 {renderChipBadge('00')}
 
@@ -997,7 +994,7 @@ playCoinSplashSound()
                   0
                 </span>
 
-               
+
 
                 {renderChipBadge('0')}
 
@@ -1007,146 +1004,146 @@ playCoinSplashSound()
 
               <div className="absolute left-[8%] top-[1%] z-10 grid h-[65%] w-[84.5%] grid-cols-12 grid-rows-3">
 
-  {[
-    ROW_1,
-    ROW_2,
-    ROW_3,
-  ].map((row) =>
-    row.map((number) => {
+                {[
+                  ROW_1,
+                  ROW_2,
+                  ROW_3,
+                ].map((row) =>
+                  row.map((number) => {
 
-      const isRed = RED_NUMBERS.includes(number)
+                    const isRed = RED_NUMBERS.includes(number)
 
-      const spot = String(number)
+                    const spot = String(number)
 
-      return (
-        <button
-          key={number}
-          type="button"
-          onClick={() => handlePlaceBet(spot)}
-          className="relative z-50 flex cursor-pointer items-center justify-center"
-        >
+                    return (
+                      <button
+                        key={number}
+                        type="button"
+                        onClick={() => handlePlaceBet(spot)}
+                        className="relative z-50 flex cursor-pointer items-center justify-center"
+                      >
 
-          <img
-            src={
-              isRed
-                ? redOvalBtn
-                : blackOvalBtn
-            }
-            alt={spot}
-            className="h-[65%] w-[77%] object-fill"
-          />
+                        <img
+                          src={
+                            isRed
+                              ? redOvalBtn
+                              : blackOvalBtn
+                          }
+                          alt={spot}
+                          className="h-[65%] w-[77%] object-fill"
+                        />
 
-          <span className="absolute text-[26px] font-black text-white drop-shadow font-aclonica">
-            {number}
-          </span>
+                        <span className="absolute text-[26px] font-black text-white drop-shadow font-aclonica">
+                          {number}
+                        </span>
 
-       
 
-          {renderChipBadge(spot)}
 
-        </button>
-      )
-    })
-  )}
+                        {renderChipBadge(spot)}
 
-</div>
+                      </button>
+                    )
+                  })
+                )}
+
+              </div>
 
               {/* =========================
     SPLIT BET HIT AREAS
 ========================= */}
 
-<div className="absolute left-[8%] top-[1%] h-[65%] w-[84.5%]">
+              <div className="absolute left-[8%] top-[1%] h-[65%] w-[84.5%]">
 
-  {/* Between Row 1 and Row 2 */}
+                {/* Between Row 1 and Row 2 */}
 
-  <div className="absolute inset-x-0 z-20 top-[33.33%] flex -translate-y-1/2">
+                <div className="absolute inset-x-0 z-20 top-[33.33%] flex -translate-y-1/2">
 
-    {[
-      '2-3',
-      '5-6',
-      '8-9',
-      '11-12',
-      '14-15',
-      '17-18',
-      '20-21',
-      '23-24',
-      '26-27',
-      '29-30',
-      '32-33',
-      '35-36',
-    ].map((spot) => (
-      <button
-        key={spot}
-        type="button"
-        onClick={() => handlePlaceBet(spot)}
-        className="relative h-[12px] w-[8.33%] cursor-pointer"
-      >
-        {renderChipBadge(spot, true)}
-      </button>
-    ))}
+                  {[
+                    '2-3',
+                    '5-6',
+                    '8-9',
+                    '11-12',
+                    '14-15',
+                    '17-18',
+                    '20-21',
+                    '23-24',
+                    '26-27',
+                    '29-30',
+                    '32-33',
+                    '35-36',
+                  ].map((spot) => (
+                    <button
+                      key={spot}
+                      type="button"
+                      onClick={() => handlePlaceBet(spot)}
+                      className="relative h-[12px] w-[8.33%] cursor-pointer"
+                    >
+                      {renderChipBadge(spot, true)}
+                    </button>
+                  ))}
 
-  </div>
+                </div>
 
 
-  {/* Between Row 2 and Row 3 */}
+                {/* Between Row 2 and Row 3 */}
 
-  <div className="absolute inset-x-0 z-20 top-[66.66%] flex -translate-y-1/2">
+                <div className="absolute inset-x-0 z-20 top-[66.66%] flex -translate-y-1/2">
 
-    {[
-      '1-2',
-      '4-5',
-      '7-8',
-      '10-11',
-      '13-14',
-      '16-17',
-      '19-20',
-      '22-23',
-      '25-26',
-      '28-29',
-      '31-32',
-      '34-35',
-    ].map((spot) => (
-      <button
-        key={spot}
-        type="button"
-        onClick={() => handlePlaceBet(spot)}
-        className="relative h-[12px] w-[8.33%] cursor-pointer"
-      >
-        {renderChipBadge(spot, true)}
-      </button>
-    ))}
+                  {[
+                    '1-2',
+                    '4-5',
+                    '7-8',
+                    '10-11',
+                    '13-14',
+                    '16-17',
+                    '19-20',
+                    '22-23',
+                    '25-26',
+                    '28-29',
+                    '31-32',
+                    '34-35',
+                  ].map((spot) => (
+                    <button
+                      key={spot}
+                      type="button"
+                      onClick={() => handlePlaceBet(spot)}
+                      className="relative h-[12px] w-[8.33%] cursor-pointer"
+                    >
+                      {renderChipBadge(spot, true)}
+                    </button>
+                  ))}
 
-  </div>
+                </div>
 
-</div>
+              </div>
 
-{/* =========================
+              {/* =========================
     BETWEEN COLUMN SPLIT BETS
 ========================= */}
 
-<div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
+              <div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
 
-  {[
-    '3-6',
-    '6-9',
-    '9-12',
-    '12-15',
-    '15-18',
-    '18-21',
-    '21-24',
-    '24-27',
-    '27-30',
-    '30-33',
-    '33-36',
-  ].map((spot, index) => (
-    <button
-      key={spot}
-      type="button"
-      onClick={() => handlePlaceBet(spot)}
-      style={{
-        left: `${((index + 1) / 12) * 100}%`,
-      }}
-      className="
+                {[
+                  '3-6',
+                  '6-9',
+                  '9-12',
+                  '12-15',
+                  '15-18',
+                  '18-21',
+                  '21-24',
+                  '24-27',
+                  '27-30',
+                  '30-33',
+                  '33-36',
+                ].map((spot, index) => (
+                  <button
+                    key={spot}
+                    type="button"
+                    onClick={() => handlePlaceBet(spot)}
+                    style={{
+                      left: `${((index + 1) / 12) * 100}%`,
+                    }}
+                    className="
         pointer-events-auto
         absolute
         top-[19%]
@@ -1156,46 +1153,46 @@ playCoinSplashSound()
         w-[40px]
         cursor-pointer
       "
-    >
-      {renderChipBadge(spot, true)}
-    </button>
-  ))}
+                  >
+                    {renderChipBadge(spot, true)}
+                  </button>
+                ))}
 
-</div>
+              </div>
 
 
-{/* =========================
+              {/* =========================
     4 NUMBER / CORNER BETS
 ========================= */}
 
-<div className="absolute left-[7.5%] top-[1%] z-20 h-[65%] w-[85.5%] pointer-events-none">
+              <div className="absolute left-[7.5%] top-[1%] z-20 h-[65%] w-[85.5%] pointer-events-none">
 
-  {/* =========================
+                {/* =========================
       ROW 1 + ROW 2
   ========================= */}
 
-  {[
-    '2-3-5-6',
-    '5-6-8-9',
-    '8-9-11-12',
-    '11-12-14-15',
-    '14-15-17-18',
-    '17-18-20-21',
-    '20-21-23-24',
-    '23-24-26-27',
-    '26-27-29-30',
-    '29-30-32-33',
-    '32-33-35-36',
-  ].map((spot, index) => (
-    <button
-      key={spot}
-      type="button"
-      onClick={() => handlePlaceBet(spot)}
-      style={{
-        left: `${((index + 1) / 12) * 100}%`,
-        top: '33.33%',
-      }}
-      className="
+                {[
+                  '2-3-5-6',
+                  '5-6-8-9',
+                  '8-9-11-12',
+                  '11-12-14-15',
+                  '14-15-17-18',
+                  '17-18-20-21',
+                  '20-21-23-24',
+                  '23-24-26-27',
+                  '26-27-29-30',
+                  '29-30-32-33',
+                  '32-33-35-36',
+                ].map((spot, index) => (
+                  <button
+                    key={spot}
+                    type="button"
+                    onClick={() => handlePlaceBet(spot)}
+                    style={{
+                      left: `${((index + 1) / 12) * 100}%`,
+                      top: '33.33%',
+                    }}
+                    className="
         pointer-events-auto
         absolute
         -translate-x-1/2
@@ -1208,38 +1205,38 @@ playCoinSplashSound()
         items-center
         justify-center
       "
-    >
-      {renderChipBadge(spot, true)}
-    </button>
-  ))}
+                  >
+                    {renderChipBadge(spot, true)}
+                  </button>
+                ))}
 
 
-  {/* =========================
+                {/* =========================
       ROW 2 + ROW 3
   ========================= */}
 
-  {[
-    '1-2-4-5',
-    '4-5-7-8',
-    '7-8-10-11',
-    '10-11-13-14',
-    '13-14-16-17',
-    '16-17-19-20',
-    '19-20-22-23',
-    '22-23-25-26',
-    '25-26-28-29',
-    '28-29-31-32',
-    '31-32-34-35',
-  ].map((spot, index) => (
-    <button
-      key={spot}
-      type="button"
-      onClick={() => handlePlaceBet(spot)}
-      style={{
-        left: `${((index + 1) / 12) * 100}%`,
-        top: '66.66%',
-      }}
-      className="
+                {[
+                  '1-2-4-5',
+                  '4-5-7-8',
+                  '7-8-10-11',
+                  '10-11-13-14',
+                  '13-14-16-17',
+                  '16-17-19-20',
+                  '19-20-22-23',
+                  '22-23-25-26',
+                  '25-26-28-29',
+                  '28-29-31-32',
+                  '31-32-34-35',
+                ].map((spot, index) => (
+                  <button
+                    key={spot}
+                    type="button"
+                    onClick={() => handlePlaceBet(spot)}
+                    style={{
+                      left: `${((index + 1) / 12) * 100}%`,
+                      top: '66.66%',
+                    }}
+                    className="
         pointer-events-auto
         absolute
         -translate-x-1/2
@@ -1252,39 +1249,39 @@ playCoinSplashSound()
         items-center
         justify-center
       "
-    >
-      {renderChipBadge(spot, true)}
-    </button>
-  ))}
+                  >
+                    {renderChipBadge(spot, true)}
+                  </button>
+                ))}
 
-</div>
-
-
+              </div>
 
 
-<div className="absolute left-[7.5%] top-[1%] z-40 h-[65%] w-[85.5%] pointer-events-none">
 
-  {[
-    '1-2-3-4-5-6',
-    '4-5-6-7-8-9',
-    '7-8-9-10-11-12',
-    '10-11-12-13-14-15',
-    '13-14-15-16-17-18',
-    '16-17-18-19-20-21',
-    '19-20-21-22-23-24',
-    '22-23-24-25-26-27',
-    '25-26-27-28-29-30',
-    '28-29-30-31-32-33',
-    '31-32-33-34-35-36',
-  ].map((spot, index) => (
-    <button
-      key={spot}
-      type="button"
-      onClick={() => handlePlaceBet(spot)}
-      style={{
-        left: `${((index + 1) / 12) * 100}%`,
-      }}
-      className="
+
+              <div className="absolute left-[7.5%] top-[1%] z-40 h-[65%] w-[85.5%] pointer-events-none">
+
+                {[
+                  '1-2-3-4-5-6',
+                  '4-5-6-7-8-9',
+                  '7-8-9-10-11-12',
+                  '10-11-12-13-14-15',
+                  '13-14-15-16-17-18',
+                  '16-17-18-19-20-21',
+                  '19-20-21-22-23-24',
+                  '22-23-24-25-26-27',
+                  '25-26-27-28-29-30',
+                  '28-29-30-31-32-33',
+                  '31-32-33-34-35-36',
+                ].map((spot, index) => (
+                  <button
+                    key={spot}
+                    type="button"
+                    onClick={() => handlePlaceBet(spot)}
+                    style={{
+                      left: `${((index + 1) / 12) * 100}%`,
+                    }}
+                    className="
         pointer-events-auto
         absolute
         bottom-0
@@ -1297,43 +1294,43 @@ playCoinSplashSound()
         items-center
         justify-center
       "
-    >
-      {renderChipBadge(spot, true)}
-    </button>
-  ))}
+                  >
+                    {renderChipBadge(spot, true)}
+                  </button>
+                ))}
 
-</div>
+              </div>
 
 
-{/* =========================
+              {/* =========================
     3 NUMBER / STREET BETS
     BOTTOM OF EACH COLUMN
 ========================= */}
 
-<div className="absolute left-[8%] top-[1%] z-40 h-[65%] w-[84.5%] pointer-events-none">
+              <div className="absolute left-[8%] top-[1%] z-40 h-[65%] w-[84.5%] pointer-events-none">
 
-  {[
-    '1-2-3',
-    '4-5-6',
-    '7-8-9',
-    '10-11-12',
-    '13-14-15',
-    '16-17-18',
-    '19-20-21',
-    '22-23-24',
-    '25-26-27',
-    '28-29-30',
-    '31-32-33',
-    '34-35-36',
-  ].map((spot, index) => (
-    <button
-      key={spot}
-      type="button"
-      onClick={() => handlePlaceBet(spot)}
-      style={{
-        left: `${((index + 0.5) / 12) * 100}%`,
-      }}
-      className="
+                {[
+                  '1-2-3',
+                  '4-5-6',
+                  '7-8-9',
+                  '10-11-12',
+                  '13-14-15',
+                  '16-17-18',
+                  '19-20-21',
+                  '22-23-24',
+                  '25-26-27',
+                  '28-29-30',
+                  '31-32-33',
+                  '34-35-36',
+                ].map((spot, index) => (
+                  <button
+                    key={spot}
+                    type="button"
+                    onClick={() => handlePlaceBet(spot)}
+                    style={{
+                      left: `${((index + 0.5) / 12) * 100}%`,
+                    }}
+                    className="
         pointer-events-auto
         absolute
         bottom-0
@@ -1346,43 +1343,43 @@ playCoinSplashSound()
         items-center
         justify-center
       "
-    >
-      {renderChipBadge(spot, true)}
-    </button>
-  ))}
+                  >
+                    {renderChipBadge(spot, true)}
+                  </button>
+                ))}
 
-</div>
+              </div>
 
 
 
-{/* =========================
+              {/* =========================
     COLUMN SPLIT BETS - ROW 2
 ========================= */}
 
-<div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
+              <div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
 
-  {[
-  '2-5',
-  '5-8',
-  '8-11',
-  '11-14',
-  '14-17',
-  '17-20',
-  '20-23',
-  '23-26',
-  '26-29',
-  '29-32',
-  '32-35',
-].map((spot, index) => (
-  <button
-    key={spot}
-    type="button"
-    onClick={() => handlePlaceBet(spot)}
-    style={{
-      left: `${((index + 1) / 12) * 100}%`,
-      top: '50%',
-    }}
-    className="
+                {[
+                  '2-5',
+                  '5-8',
+                  '8-11',
+                  '11-14',
+                  '14-17',
+                  '17-20',
+                  '20-23',
+                  '23-26',
+                  '26-29',
+                  '29-32',
+                  '32-35',
+                ].map((spot, index) => (
+                  <button
+                    key={spot}
+                    type="button"
+                    onClick={() => handlePlaceBet(spot)}
+                    style={{
+                      left: `${((index + 1) / 12) * 100}%`,
+                      top: '50%',
+                    }}
+                    className="
       pointer-events-auto
       absolute
       
@@ -1392,41 +1389,41 @@ playCoinSplashSound()
       w-[40px]
       cursor-pointer
     "
-  >
-    {renderChipBadge(spot, true)}
-  </button>
-))}
+                  >
+                    {renderChipBadge(spot, true)}
+                  </button>
+                ))}
 
-</div>
+              </div>
 
-{/* =========================
+              {/* =========================
     COLUMN SPLIT BETS - ROW 3
 ========================= */}
 
-<div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
+              <div className="absolute left-[7.5%] top-[1%] z-30 h-[65%] w-[85.5%] pointer-events-none">
 
-  {[
-  '1-4',
-  '4-7',
-  '7-10',
-  '10-13',
-  '13-16',
-  '16-19',
-  '19-22',
-  '22-25',
-  '25-28',
-  '28-31',
-  '31-34',
-].map((spot, index) => (
-  <button
-    key={spot}
-    type="button"
-    onClick={() => handlePlaceBet(spot)}
-    style={{
-      left: `${((index + 1) / 12) * 100}%`,
-      top: '83.33%',
-    }}
-    className="
+                {[
+                  '1-4',
+                  '4-7',
+                  '7-10',
+                  '10-13',
+                  '13-16',
+                  '16-19',
+                  '19-22',
+                  '22-25',
+                  '25-28',
+                  '28-31',
+                  '31-34',
+                ].map((spot, index) => (
+                  <button
+                    key={spot}
+                    type="button"
+                    onClick={() => handlePlaceBet(spot)}
+                    style={{
+                      left: `${((index + 1) / 12) * 100}%`,
+                      top: '83.33%',
+                    }}
+                    className="
       pointer-events-auto
       absolute
       
@@ -1436,12 +1433,12 @@ playCoinSplashSound()
       w-[40px]
       cursor-pointer
     "
-  >
-    {renderChipBadge(spot, true)}
-  </button>
-))}
+                  >
+                    {renderChipBadge(spot, true)}
+                  </button>
+                ))}
 
-</div>
+              </div>
 
               {/* 2 TO 1 */}
 
@@ -1724,7 +1721,7 @@ playCoinSplashSound()
           </div>
 
         </div>
-        
+
 
         <RouletteMachinePopup
           isOpen={isPopupOpen}
@@ -1732,7 +1729,12 @@ playCoinSplashSound()
           targetIndex={targetWinning?.index}
           onClose={handleClosePopup}
           onResult={({ number }) => {
-            setWinnerNumber(pendingWinAmountRef.current ?? 0)
+            const winAmount = Number(pendingWinAmountRef.current ?? 0)
+            setWinnerNumber(winAmount)
+            if (winAmount > 0) {
+              addWallet(winAmount)
+            }
+            pendingWinAmountRef.current = 0
             setWinningSpot(number)
             if (pendingHistoryListRef.current) {
               setHistoryList(pendingHistoryListRef.current)

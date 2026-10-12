@@ -157,7 +157,6 @@ export default function DashboardPage() {
         <button
           type="button"
           onClick={handleLogout}
-          title="Close / Exit"
           className="absolute right-[0.7%] top-[1%] z-[60] flex cursor-pointer items-center justify-center border-0 bg-transparent p-0 outline-none transition-transform duration-150 hover:scale-105 active:scale-95"
         >
           <img
