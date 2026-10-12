@@ -332,6 +332,11 @@ function RouletteMiniTimer() {
   const lastKnownGameNoRef = useRef(null)
   const pendingHistoryListRef = useRef(null)
   const pendingWinAmountRef = useRef(null)
+  const betHistoryRef = useRef([])
+  const isBetConfirmedRef = useRef(false)
+  const isSubmittingBetRef = useRef(false)
+  const autoBetSubmittedRef = useRef(false)
+  const handleBetConfirmRef = useRef(null)
   const totalBet = Object.values(bets).reduce(
     (sum, value) => sum + value,
     0,
@@ -592,17 +597,26 @@ function RouletteMiniTimer() {
 
       const { timerBetTime, timerStatus: incomingStatus } = parsedData;
 
-      // Timer update hota rahega
-      if (timerBetTime !== undefined) {
-        setTimeLeft(Number(timerBetTime));
-      }
-
       if (incomingStatus === undefined) return;
 
       const currentStatus = Number(incomingStatus);
       const previousStatus = previousTimerStatusRef.current;
 
       setTimerStatus(currentStatus);
+
+      // Timer update hota rahega
+      if (timerBetTime !== undefined) {
+        const timeVal = Number(timerBetTime);
+        setTimeLeft(timeVal);
+
+        // Timer 10 and timerstatus 1 hone par bets automatic lag jayegi agar pehle se nahi lagi ho to
+        if (currentStatus === 1 && timeVal <= 10 && !autoBetSubmittedRef.current) {
+          if (betHistoryRef.current?.length > 0 && !isBetConfirmedRef.current) {
+            autoBetSubmittedRef.current = true;
+            handleBetConfirmRef.current?.(true);
+          }
+        }
+      }
 
       // Sirf status change hone par action lo
       if (currentStatus !== previousStatus) {
@@ -633,6 +647,7 @@ function RouletteMiniTimer() {
             fetchWinAmountRef.current?.();
           })();
         } else if (currentStatus === 1) {
+          autoBetSubmittedRef.current = false;
           setShowClock(true);
           setIsSpinning(false);
           setShowResultMarker(false);
@@ -641,6 +656,7 @@ function RouletteMiniTimer() {
           setShowPleaseSelectChips(false);
           setShowBetAccepted(false);
           setIsBetConfirmed(false);
+          isBetConfirmedRef.current = false;
           stopBlueWheelSound();
           if (spinTimeoutRef.current) {
             clearTimeout(spinTimeoutRef.current);
@@ -802,14 +818,34 @@ function RouletteMiniTimer() {
     ])
   }
 
-  const handleBetConfirm = async () => {
+  useEffect(() => {
+    betHistoryRef.current = betHistory
+  }, [betHistory])
+
+  useEffect(() => {
+    isBetConfirmedRef.current = isBetConfirmed
+  }, [isBetConfirmed])
+
+  useEffect(() => {
+    isSubmittingBetRef.current = isSubmittingBet
+  }, [isSubmittingBet])
+
+  useEffect(() => {
+    handleBetConfirmRef.current = handleBetConfirm
+  })
+
+  const handleBetConfirm = async (isAuto = false) => {
+    const isAutomatic = isAuto === true
+    const currentBets = betHistoryRef.current || betHistory
+    const isConfirmed = isBetConfirmedRef.current ?? isBetConfirmed
+
     if (
-      betHistory.length === 0 ||
-      isBetConfirmed ||
-      isSubmittingBet ||
+      currentBets.length === 0 ||
+      isConfirmed ||
+      isSubmittingBetRef.current ||
       isSpinning ||
-      timerStatus !== 1 ||
-      (timeLeft !== null && timeLeft <= 10)
+      (!isAutomatic && timerStatus !== 1) ||
+      (!isAutomatic && timeLeft !== null && timeLeft <= 10)
     ) {
       return
     }
@@ -822,7 +858,7 @@ function RouletteMiniTimer() {
     }
 
     const payload = createBetPayload(
-      betHistory,
+      currentBets,
       user,
       activeGameNo,
     )
@@ -833,6 +869,7 @@ function RouletteMiniTimer() {
 
     try {
       setIsSubmittingBet(true)
+      isSubmittingBetRef.current = true
       const response = await placeBlue36Bet(payload)
       console.log('Blue 36 Bet response:', response)
 
@@ -842,6 +879,7 @@ function RouletteMiniTimer() {
       }
 
       setIsBetConfirmed(true)
+      isBetConfirmedRef.current = true
       setShowBetAccepted(true)
       speak('Bet accepted successfully')
 
@@ -857,6 +895,7 @@ function RouletteMiniTimer() {
       toast.error(error?.response?.data?.message || 'Failed to place bet')
     } finally {
       setIsSubmittingBet(false)
+      isSubmittingBetRef.current = false
     }
   }
 
@@ -1214,12 +1253,12 @@ function RouletteMiniTimer() {
     </div> */}
 
 
-        {/* 
-    <div className="absolute right-[457px] bottom-59 h-[5px] w-[645px]  bg-white -rotate-z-25 rounded-[50px] ">
+        
+    {/* <div className="absolute right-[456px] bottom-59 h-[5px] w-[648px]  bg-white -rotate-z-25 rounded-[100px] ">
     </div>
     <div className="absolute left-[883px] bottom-8 h-[89px] w-[5px]  bg-white -rotate-z-54 rounded-[50px]">
     </div>
-    <div className="absolute right-[400px] bottom-80 h-[89px] w-[5px]  bg-white -rotate-z-54 rounded-[50px]">
+    <div className="absolute right-[446px] bottom-78 h-[88px] w-[5px]  bg-white -rotate-z-63 rounded-[100px]">
     </div> */}
 
 

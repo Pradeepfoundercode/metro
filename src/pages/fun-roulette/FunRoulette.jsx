@@ -115,6 +115,10 @@ export default function FunRoulette() {
 
   const [winnerNumber, setWinnerNumber] = useState('0')
   const [isLocked, setIsLocked] = useState(false)
+  const isLockedRef = useRef(false)
+  const betHistoryRef = useRef([])
+  const autoBetSubmittedRef = useRef(false)
+  const handleBetOkRef = useRef(null)
   const [statusMessage, setStatusMessage] = useState(
     'Please Bet to start Game . Minimum Bet = 1'
   )
@@ -144,17 +148,26 @@ useEffect(() => {
 
     const { timerBetTime, timerStatus } = parsedData;
 
-    // Timer har second update hoga
-    if (timerBetTime !== undefined) {
-      setTimeLeft(Number(timerBetTime));
-    }
-
     if (timerStatus === undefined) return;
 
     const status = Number(timerStatus);
     const previousStatus = previousTimerStatusRef.current;
 
     setTimerStatus(status);
+
+    // Timer har second update hoga
+    if (timerBetTime !== undefined) {
+      const timeVal = Number(timerBetTime);
+      setTimeLeft(timeVal);
+
+      // Agar timer 10 aur timerstatus 1 ho, aur bets pehle se manually confirm na hui ho, to auto-confirm chalega
+      if (status === 1 && timeVal <= 10 && !autoBetSubmittedRef.current) {
+        if (betHistoryRef.current?.length > 0 && !isLockedRef.current) {
+          autoBetSubmittedRef.current = true;
+          handleBetOkRef.current?.();
+        }
+      }
+    }
 
     console.log('Timer:', {
       timerBetTime,
@@ -216,11 +229,13 @@ useEffect(() => {
 
       if (status === 1) {
         // Naya betting phase: sirf ek baar
+        autoBetSubmittedRef.current = false;
         setIsPopupOpen(false);
         setTargetWinning(null);
         setShowWaitToComplete(false);
         setShowGreaterThan10(false);
         setIsLocked(false);
+        isLockedRef.current = false;
         setShowPlaceYourBets(true);
 
         if (pendingHistoryListRef.current) {
@@ -436,54 +451,70 @@ playCoinSplashSound()
   // )
 }
 
-const handleBetOk = async () => {
-  if (!betHistory?.length || isLocked) {
-    return;
-  }
+  useEffect(() => {
+    betHistoryRef.current = betHistory;
+  }, [betHistory]);
 
-  const activeGameNo = lastKnownGameNoRef.current;
+  useEffect(() => {
+    isLockedRef.current = isLocked;
+  }, [isLocked]);
 
-  if (!activeGameNo) {
-    toast.error('Game number is required');
-    return;
-  }
+  useEffect(() => {
+    handleBetOkRef.current = handleBetOk;
+  });
 
-  const payload = createBetPayload(
-    betHistory,
-    user,
-    activeGameNo
-  )
+  const handleBetOk = async () => {
+    const currentBets = betHistoryRef.current || betHistory;
+    const currentlyLocked = isLockedRef.current || isLocked;
 
-  if (!payload) return
-
-  try {
-    const response = await placeFunRouletteBet(payload)
-
-    console.log('Bet response:', response)
-    console.log('Sent game number:', activeGameNo)
-
-    if (response?.success === false) {
-      toast.error(response?.message || 'Failed to place bet')
-      return
+    if (!currentBets?.length || currentlyLocked) {
+      return;
     }
 
-    setIsLocked(true)
-    setShowBetAccepted(true)
-    setBets({})
-    setShowPlaceYourBets(false)
-    setShowWaitToComplete(false)
-    setShowGreaterThan10(false)
+    const activeGameNo = lastKnownGameNoRef.current;
 
-    speak('Bet accepted successfully')
+    if (!activeGameNo) {
+      toast.error('Game number is required');
+      return;
+    }
 
-    setTimeout(() => {
-      setShowBetAccepted(false)
-    }, 1500)
-  } catch (error) {
-    console.error('Bet placement failed:', error)
-    toast.error('Failed to place bet')
+    const payload = createBetPayload(
+      currentBets,
+      user,
+      activeGameNo
+    )
+
+    if (!payload) return
+
+    try {
+      const response = await placeFunRouletteBet(payload)
+
+      console.log('Bet response:', response)
+      console.log('Sent game number:', activeGameNo)
+
+      if (response?.success === false) {
+        toast.error(response?.message || 'Failed to place bet')
+        return
+      }
+
+      setIsLocked(true)
+      isLockedRef.current = true
+      setShowBetAccepted(true)
+      setBets({})
+      setShowPlaceYourBets(false)
+      setShowWaitToComplete(false)
+      setShowGreaterThan10(false)
+
+      speak('Bet accepted successfully')
+
+      setTimeout(() => {
+        setShowBetAccepted(false)
+      }, 1500)
+    } catch (error) {
+      console.error('Bet placement failed:', error)
+      toast.error('Failed to place bet')
+    }
   }
-}
 
 
 

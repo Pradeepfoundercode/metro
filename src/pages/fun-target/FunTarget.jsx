@@ -67,6 +67,13 @@ export default function FunTarget() {
   const isBetAcceptedRef = useRef(false)
   isBetAcceptedRef.current = isBetAccepted
 
+  const autoBetSubmittedRef = useRef(false)
+  const handleBetOkRef = useRef(null)
+  const betsRef = useRef({})
+  betsRef.current = bets
+  const isSubmittingBetRef = useRef(false)
+  isSubmittingBetRef.current = isSubmittingBet
+
   const spinTimeoutRef = useRef(null)
   const pendingLast10Ref = useRef(null)
   const triggerSpinRef = useRef(null)
@@ -94,13 +101,17 @@ export default function FunTarget() {
   }
 
   const handleBetOk = async () => {
-    if (isBettingClosed || isSubmittingBet) {
+    const currentBets = betsRef.current || bets
+    const currentlyAccepted = isBetAcceptedRef.current || isBetAccepted
+    const currentlySubmitting = isSubmittingBetRef.current || isSubmittingBet
+
+    if (currentlyAccepted || currentlySubmitting || timerStatus === 2 || isSpinning) {
       return
     }
 
-    const formattedBets = BET_SPOTS.filter((num) => (bets[num] || 0) > 0).map((num) => ({
+    const formattedBets = BET_SPOTS.filter((num) => (currentBets[num] || 0) > 0).map((num) => ({
       game_id: Number(num),
-      amount: Number(bets[num]),
+      amount: Number(currentBets[num]),
     }))
 
     if (formattedBets.length === 0) {
@@ -132,6 +143,7 @@ export default function FunTarget() {
 
     try {
       setIsSubmittingBet(true)
+      isSubmittingBetRef.current = true
       const res = await placeFunTargetBet(payload)
       console.log('Fun Target Bet Response:', res)
 
@@ -141,6 +153,7 @@ export default function FunTarget() {
       }
 
       setIsBetAccepted(true)
+      isBetAcceptedRef.current = true
       speak('Bets Accepted Successfully')
 
       if (res?.wallet !== undefined) {
@@ -153,8 +166,13 @@ export default function FunTarget() {
       toast.error('Failed to place bet')
     } finally {
       setIsSubmittingBet(false)
+      isSubmittingBetRef.current = false
     }
   }
+
+  useEffect(() => {
+    handleBetOkRef.current = handleBetOk
+  })
 
   const fetchLastResult = useCallback(async (updateUI = true) => {
     const activeUserId = user?.id || userId || localStorage.getItem('user_id')
@@ -244,6 +262,8 @@ export default function FunTarget() {
       })
 
       setIsBetAccepted(false)
+      isBetAcceptedRef.current = false
+      autoBetSubmittedRef.current = false
     }, 11000)
   }, [])
 
@@ -267,18 +287,30 @@ export default function FunTarget() {
       if (!parsedData) return
 
       const { timerBetTime, timerStatus: incomingStatus } = parsedData
+      const timerStatusVal = incomingStatus !== undefined ? incomingStatus : parsedData?.timer_status
 
-      // Timer har second update hoga
-      if (timerBetTime !== undefined) {
-        setTimeLeft(Number(timerBetTime))
-      }
+      if (timerStatusVal === undefined) return
 
-      if (incomingStatus === undefined) return
-
-      const status = Number(incomingStatus)
+      const status = Number(timerStatusVal)
       const previousStatus = previousTimerStatusRef.current
 
       setTimerStatus(status)
+
+      // Timer har second update hoga
+      if (timerBetTime !== undefined) {
+        const timeVal = Number(timerBetTime)
+        setTimeLeft(timeVal)
+
+        // Agar timer 10 aur timerstatus 1 ho, aur bets pehle se manually confirm na hui ho, to auto-confirm chalega
+        if (status === 1 && timeVal <= 10 && !autoBetSubmittedRef.current) {
+          const currentBets = betsRef.current || bets
+          const hasBets = Object.values(currentBets).some((amount) => Number(amount) > 0)
+          if (hasBets && !isBetAcceptedRef.current) {
+            autoBetSubmittedRef.current = true
+            handleBetOkRef.current?.()
+          }
+        }
+      }
 
       // Sirf status change hone par actions chalenge
       if (status !== previousStatus) {
@@ -315,8 +347,10 @@ export default function FunTarget() {
         }
 
         if (status === 1) {
+          autoBetSubmittedRef.current = false
           setIsSpinning(false)
           setIsBetAccepted(false)
+          isBetAcceptedRef.current = false
           setBets({})
         }
       }
