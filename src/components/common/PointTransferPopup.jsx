@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import closeBg from '../../assets/bg/close_bg.png'
 import { playGameTapSound } from '../../utils/sound'
 import { useAuth } from '../../hooks/useAuth'
 import { transferAmount } from '../../services/auth.service'
+
+import cancelBtn from '../../assets/button/cancel.png'
 
 export default function PointTransferPopup({ isOpen, onClose }) {
   const [toUsername, setToUsername] = useState('')
@@ -87,11 +89,11 @@ export default function PointTransferPopup({ isOpen, onClose }) {
 
   return (
     <div
-      className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[2px] select-none"
+      className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[2px] select-none p-2 overflow-hidden"
       onClick={handleClose}
     >
       <div
-        className="relative flex h-[520px] w-[760px] flex-col items-center justify-start overflow-hidden px-6 pt-5 pb-6 drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
+        className="relative flex h-[520px] w-[760px] max-w-[760px] max-h-[520px] shrink-0 flex-col items-center justify-start overflow-hidden px-6 pt-5 pb-6 drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
         style={{
           backgroundImage: `url(${closeBg})`,
           backgroundSize: '100% 100%',
@@ -100,6 +102,18 @@ export default function PointTransferPopup({ isOpen, onClose }) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-6 top-6 flex h-[34px] w-[34px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
+        >
+          <img
+            src={cancelBtn}
+            alt="Close"
+            className="h-full w-full object-contain drop-shadow"
+          />
+        </button>
+
         <h2 className="mb-4 pt-1 pb-2 text-center text-[32px] font-semibold uppercase tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
           POINT TRANSFER
         </h2>

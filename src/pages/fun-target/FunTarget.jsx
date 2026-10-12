@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useWalletStore } from '../../store/useWalletStore'
 import toast from 'react-hot-toast'
-import { placeFunTargetBet, getFunTargetLastResult, getFunTargetWinAmount } from '../../services/funtarget.service'
+import { placeFunTargetBet, getFunTargetLastResult, getFunTargetWinAmount, takeAmount } from '../../services/funtarget.service'
+import { getUserProfile } from '../../services/auth.service'
 import socket from '../../services/socket.service'
 import GameHistoryPopup from '../../components/common/GameHistoryPopup'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
-import { playGameTapSound, playMoveChakraSound, stopMoveChakraSound, playPlaceChipSound } from '../../utils/sound'
+import { playGameTapSound, playMoveChakraSound, stopMoveChakraSound, playPlaceChipSound, playCoinSplashSound } from '../../utils/sound'
 
 import homeBgFun from '../../assets/fun_target/home_bg_fun.png'
 import scoreWord from '../../assets/fun_target/score_word.png'
@@ -40,7 +41,7 @@ import { BET_SPOTS, LEFT_CHIPS, RIGHT_CHIPS, STATIC_FUN_TARGET_HISTORY } from '.
 
 export default function FunTarget() {
   const navigate = useNavigate()
-  const { user, userId } = useAuth()
+  const { user, userId, userProfile } = useAuth()
   const { wallet, deductWallet, addWallet, setWallet } = useWalletStore()
 
   const [timeLeft, setTimeLeft] = useState(0)
@@ -48,6 +49,7 @@ export default function FunTarget() {
   const previousTimerStatusRef = useRef(null)
   const [isSpinning, setIsSpinning] = useState(false)
   const [winnerNumber, setWinnerNumber] = useState(0)
+  const [isTaking, setIsTaking] = useState(false)
   const [last10Data, setLast10Data] = useState([1, 4, 2, 8, 9, 4, 9, 9, 5, 1])
   const [rotation, setRotation] = useState(0)
   const [selectedChip, setSelectedChip] = useState(1)
@@ -174,6 +176,69 @@ export default function FunTarget() {
     handleBetOkRef.current = handleBetOk
   })
 
+  const handleTake = async () => {
+    if (isTaking || isSpinning) return
+
+    const activeUserId = String(
+      user?.id ||
+      userId ||
+      localStorage.getItem('user_id') ||
+      localStorage.getItem('userId') ||
+      '156'
+    )
+    const currentWin = Number(winnerNumber || 0)
+
+    setIsTaking(true)
+    try {
+      const res = await takeAmount({
+        user_id: activeUserId,
+        amount: currentWin,
+      })
+      console.log('takeamount response:', res)
+
+      setWinnerNumber(0)
+      playCoinSplashSound()
+
+      let profileUpdated = false
+      try {
+        if (userProfile) {
+          const profRes = await userProfile(activeUserId)
+          if (profRes?.data?.wallet != null) {
+            setWallet(profRes.data.wallet)
+            profileUpdated = true
+          }
+        } else {
+          const profRes = await getUserProfile(activeUserId)
+          if (profRes?.data?.wallet != null) {
+            setWallet(profRes.data.wallet)
+            profileUpdated = true
+          }
+        }
+      } catch (profErr) {
+        console.error('Failed to update profile after take:', profErr)
+      }
+
+      if (!profileUpdated && currentWin > 0) {
+        addWallet(currentWin)
+      }
+    } catch (err) {
+      console.error('takeamount error:', err)
+      setWinnerNumber(0)
+      try {
+        if (userProfile) {
+          await userProfile(activeUserId)
+        }
+      } catch (profErr) {
+        console.error(profErr)
+      }
+      if (currentWin > 0) {
+        addWallet(currentWin)
+      }
+    } finally {
+      setIsTaking(false)
+    }
+  }
+
   const fetchLastResult = useCallback(async (updateUI = true) => {
     const activeUserId = user?.id || userId || localStorage.getItem('user_id')
     if (!activeUserId) return null
@@ -245,9 +310,6 @@ export default function FunTarget() {
       setIsSpinning(false)
       const winAmount = Number(pendingWinAmountRef.current ?? 0)
       setWinnerNumber(winAmount)
-      if (winAmount > 0) {
-        addWallet(winAmount)
-      }
       pendingWinAmountRef.current = 0
       speak(`Winning number is ${nextWinner}`)
 
@@ -571,13 +633,22 @@ export default function FunTarget() {
 
         <div className="absolute left-0 right-0 top-[650px] z-30 flex items-center justify-between ">
           <div className="flex items-center gap-[170px]">
-            <div className="relative flex h-[40px] w-[190px] items-center justify-center select-none opacity-95">
+            <button
+              type="button"
+              onClick={handleTake}
+              disabled={isTaking || isSpinning}
+              className={`relative flex h-[40px] w-[190px] items-center justify-center select-none transition ${
+                winnerNumber > 0 && !isSpinning
+                  ? 'cursor-pointer hover:scale-105 active:scale-95 drop-shadow-[0_0_12px_rgba(255,215,0,0.85)] animate-pulse'
+                  : 'cursor-pointer hover:brightness-110 active:scale-95'
+              } ${isTaking ? 'opacity-60 pointer-events-none' : ''}`}
+            >
               <img
                 src={takeBtn}
                 alt="Take"
                 className="h-full w-full object-fill drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
               />
-            </div>
+            </button>
 
             <button
               type="button"

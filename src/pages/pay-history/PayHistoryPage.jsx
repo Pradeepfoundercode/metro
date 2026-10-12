@@ -95,7 +95,7 @@ export default function PayHistoryPage() {
           </div>
 
           {/* Data Rows */}
-          <div className="flex flex-col gap-[6px]">
+          <div className="flex flex-col gap-[6px] max-h-[550px] overflow-y-auto pr-6">
             {ROWS_DATA.map((row, idx) => (
               <div
                 key={idx}

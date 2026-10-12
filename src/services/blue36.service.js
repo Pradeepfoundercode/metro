@@ -1,16 +1,16 @@
 import API from "./api"
 
-export const getLastResult = async(userId)=>{
+export const getLastResult = async (userId) => {
     const res = await API.get("/blue_36_last_result", {
-        params :{
-            user_id : userId
+        params: {
+            user_id: userId
         }
     })
 
     return res.data
 }
 
-export const getBlue36BetHistory = async(userId, limit = 5)=>{
+export const getBlue36BetHistory = async (userId, limit = 5) => {
     const res = await API.get("/blue_36_bet_history", {
         params: {
             limit,
@@ -40,4 +40,4 @@ export const getBlue36WinAmount = async (userId) => {
     }
 }
 
-
+

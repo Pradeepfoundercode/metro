@@ -68,7 +68,7 @@ export default function GameHistoryPopup({
         </div>
 
         <div className="mx-auto mt-12 flex h-[590px] w-[91%] flex-col overflow-hidden rounded-2xl border border-white bg-black/55 backdrop-blur-[2px]">
-          <div className="grid grid-cols-5 border-b border-white bg-black/40 py-2.5 text-center text-[18px] font-black tracking-wide text-white">
+          <div className="grid grid-cols-5 border-b border-white bg-black/40 py-2.5 text-center text-[18px] font-black tracking-wide text-white shrink-0">
             <div>NO.</div>
             <div>Games No.</div>
             <div>{resultLabel}</div>
@@ -76,7 +76,7 @@ export default function GameHistoryPopup({
             <div>Won</div>
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col overflow-y-auto flex-1 pr-1">
            {displayHistory.map((row, index) => {
   const resultVal = row.win_number ?? '-'
   const hasWon = Number(row.win_amount) > 0

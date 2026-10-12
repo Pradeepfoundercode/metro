@@ -1,5 +1,6 @@
 import React from 'react'
 import closeBg from '../../assets/bg/close_bg.png'
+import cancelBtn from '../../assets/button/cancel.png'
 import { playGameTapSound } from '../../utils/sound'
 import toast from 'react-hot-toast'
 
@@ -25,7 +26,7 @@ export default function HelpPopup({ isOpen, onClose }) {
       onClick={handleClose}
     >
       <div
-        className="relative flex h-[510px] w-[900px] max-w-[92vw] flex-col items-center justify-center overflow-hidden px-8 py-8 text-center text-white drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
+        className="relative flex h-[510px] w-[900px] flex-col items-center justify-center overflow-hidden px-8 py-8 text-center text-white drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
         style={{
           backgroundImage: `url(${closeBg})`,
           backgroundSize: '100% 100%',
@@ -34,6 +35,18 @@ export default function HelpPopup({ isOpen, onClose }) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-6 top-6 flex h-[34px] w-[34px] cursor-pointer items-center justify-center transition hover:scale-105 active:scale-95"
+        >
+          <img
+            src={cancelBtn}
+            alt="Close"
+            className="h-full w-full object-contain drop-shadow"
+          />
+        </button>
+
         {/* Welcome Heading */}
         <h2 className="text-[36px] font-bold tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
           Welcome, Metro Games

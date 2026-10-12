@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import rouletteMiniBg from '../../assets/timer_36/roulettemini1.png'
-// import rouletteMiniBg from '../../assets/timer_36/blue_36_bg.png'
+
+import rouletteMiniBg from '../../assets/timer_36/blue_36_bg.png'
+
 
 import { useAuth } from '../../hooks/useAuth'
 import { useWalletStore } from '../../store/useWalletStore'
@@ -20,6 +21,7 @@ import { getGameId, createBetPayload } from '../../utils/helper'
 
 import {
   CHIPS,
+  CHIP_IMAGES,
   PlacedChip,
   getNumberCoordinates,
   OUTSIDE_BETS,
@@ -45,6 +47,7 @@ import watch40Img from '../../assets/timer_36/watch_40.png'
 import waitToComplete from '../../assets/timer_36/wait_to_complete.png'
 import betAcceptedImg from '../../assets/timer_36/bet_accepted.png'
 import pleaseSelectChipsImg from '../../assets/timer_36/please_select_chips.png'
+import rouletteMiniGridImg from '../../assets/timer_36/roulettemini1.png'
 import greaterThan10Rs from '../../assets/timer_36/gr_than_10.png'
 import lastCallImg from '../../assets/timer_36/last_call.png'
 import buttonBg from '../../assets/timer_36/button_bg.png'
@@ -55,6 +58,7 @@ import repeatBtn from "../../assets/timer_36/repeat.png"
 import gameHistoryBtn from "../../assets/timer_36/game_history.png"
 import neighbourBtn from "../../assets/timer_36/neighbour.png"
 import leaveTableBtn from "../../assets/timer_36/leave_table.png"
+
 import rulesBtn from "../../assets/timer_36/rules_btn.png"
 import betConBtn from "../../assets/bet_con_btn.png"
 import betAccBtn from "../../assets/bet_acc_btn.png"
@@ -288,7 +292,7 @@ function RouletteMiniTimer() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { wallet, deductWallet, addWallet } = useWalletStore()
-  const [selectedChip, setSelectedChip] = useState(null)
+  const [selectedChip, setSelectedChip] = useState(2)
 
   const [timeLeft, setTimeLeft] = useState(null);
   const [timerStatus, setTimerStatus] = useState(1);
@@ -462,7 +466,7 @@ function RouletteMiniTimer() {
       setBetHistory([]);
       setIsBetConfirmed(false);
       setShowBetAccepted(false);
-      setSelectedChip(null);
+      setSelectedChip((prev) => prev || 2);
       setYouWon(0);
       pendingWinAmountRef.current = null;
 
@@ -673,7 +677,7 @@ function RouletteMiniTimer() {
     socket.on(import.meta.env.VITE_MINITIMER_EVENT_NAME, handleTimer);
 
     return () => {
-     socket.off(import.meta.env.VITE_MINITIMER_EVENT_NAME, handleTimer);
+      socket.off(import.meta.env.VITE_MINITIMER_EVENT_NAME, handleTimer);
     };
   }, []);
 
@@ -1236,38 +1240,23 @@ function RouletteMiniTimer() {
           className="pointer-events-none absolute inset-0 z-0 h-full w-full object-fill"
         />
 
-        {/* <div className="absolute right-[679px] -bottom-[164px] grid grid-cols-1 w-[113px] border-y-7 border-l-7 rounded-l-2xl border-white [perspective:2000px] [transform-style:preserve-3d] rotate-x-56 rotate-z-40 rotate-y-2 -skew-x-8 -skew-y-2">
-      {imageItems.map((image, index) => (
+        {/* COMPLETE UNBROKEN BETTING GRID & COINS TRAY (EXACT 1:1 TO SCREENSHOT, EXCLUDING HISTORY & TOP) */}
         <div
-          key={index}
-          className="flex h-[94px]  items-center justify-center "
+          className="pointer-events-none absolute inset-0 z-10 select-none overflow-hidden"
+          style={{
+            clipPath:
+              'polygon(0% 50.0%, 45.0% 18.0%, 72.0% 18.0%, 85.0% 50.0%, 85.0% 96.0%, 25.0% 96.0%, 0% 80.0%)',
+          }}
         >
           <img
-            src={image}
-            alt={`Option ${index + 1}`}
-            className='h-[75px] w-[76px] object-contain -rotate-90  '
-            
+            src={rouletteMiniGridImg}
+            alt="Roulette Betting Grid"
+            className="pointer-events-none h-full w-full object-fill select-none"
           />
         </div>
-      ))}
-    </div> */}
-
-
-        
-    {/* <div className="absolute right-[456px] bottom-59 h-[5px] w-[648px]  bg-white -rotate-z-25 rounded-[100px] ">
-    </div>
-    <div className="absolute left-[883px] bottom-8 h-[89px] w-[5px]  bg-white -rotate-z-54 rounded-[50px]">
-    </div>
-    <div className="absolute right-[446px] bottom-78 h-[88px] w-[5px]  bg-white -rotate-z-63 rounded-[100px]">
-    </div> */}
-
-
-
-
-
 
         {/* HISTORY */}
-        <div className="pointer-events-none absolute rounded-lg left-[84px] top-[16px] bg-black z-10 flex h-[282px] w-[145px] flex-col p-[12px_14px] text-[18px] font-black leading-none">
+        <div className="pointer-events-none absolute rounded-lg left-[84px] top-[16px] z-10 flex h-[282px] w-[145px] flex-col p-[12px_14px] text-[18px] font-black leading-none">
           {historyList.map(
             ([number, side], index) => (
               <div
@@ -1282,9 +1271,9 @@ function RouletteMiniTimer() {
         </div>
 
         {/* CURRENT PLAY + YOU WON */}
-        <div className="pointer-events-none absolute left-[262px] top-[15px] z-10 flex h-[182px] w-[424px] flex-col p-[0px_12px]">
-          <div className="relative flex h-[122px] w-full overflow-hidden rounded-t-[10px]  bg-[#ea926b]">
-            <div className="absolute left-[201px] h-[600px] w-[600px] -translate-x-1/2 origin-center">
+        <div className="pointer-events-none absolute left-[262px] top-[16px] z-10 flex h-[180px] w-[420px] flex-col p-[0px_12px]">
+          <div className="relative flex h-[122px] w-full overflow-hidden rounded-t-[10px]  ">
+            <div className="absolute left-[202px] h-[600px] w-[610px] -translate-x-1/2 origin-center bg-[#ee8c69]">
               <img
                 src={wheelImg}
                 alt="Roulette Wheel"
@@ -1298,22 +1287,22 @@ function RouletteMiniTimer() {
               />
             </div>
 
-            <div className="pointer-events-none absolute left-[203px] top-[100px] z-20 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)]" />
+            <div className="pointer-events-none absolute left-[204px] top-[100px] z-20 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[radial-gradient(circle_at_35%_35%,#ffffff_0%,#ffffff_65%,#f1f5f9_85%,#cbd5e1_100%)]" />
           </div>
 
           <div className="flex flex-col justify-center">
-            <div className="border-b border-t border-yellow-400 bg-black py-0 pl-6 text-[21px] font-semibold text-white drop-shadow">
+            <div className="border-b border-t border-yellow-400 py-0 pl-6 text-[21px] font-semibold text-white drop-shadow">
               Current Play : {totalBet}
             </div>
 
-            <div className="pl-6 text-[20px] font-semibold bg-black text-green-500 ">
+            <div className="pl-6 text-[20px] font-semibold text-green-500 ">
               You Won {youWon}
             </div>
           </div>
         </div>
 
         {/* MIN / MAX PLAY */}
-        <div className="pointer-events-none absolute bg-black rounded-lg left-[706px] top-[18px] z-10 flex h-[88px] w-[322px] flex-col items-center justify-center text-center leading-[20px]">
+        <div className="pointer-events-none absolute rounded-lg left-[706px] top-[18px] z-10 flex h-[88px] w-[322px] flex-col items-center justify-center text-center leading-[20px]">
           <span className="text-[17px] font-semibold tracking-wide text-yellow-300">
             MIN- Play
           </span>
@@ -1332,7 +1321,7 @@ function RouletteMiniTimer() {
         </div>
 
         {/* WINNING NUMBER */}
-        <div className="pointer-events-none absolute left-[1060px] rounded-lg top-[17px] bg-black z-10 flex h-[68px] w-[186px] items-center justify-center">
+        <div className="pointer-events-none absolute left-[1060px] rounded-lg top-[17px] z-10 flex h-[68px] w-[186px] items-center justify-center">
           <span
             className="text-[54px] font-bold tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]"
             style={{
@@ -1513,21 +1502,21 @@ function RouletteMiniTimer() {
                 height: chip.height,
                 transform:
                   chip.transform ||
-                  'translate(-55%, -57%) rotateX(59deg)',
+                  'translate(-50%, -50%) rotateX(59deg)',
               }}
               className="z-40 flex cursor-pointer items-center justify-center rounded-full bg-transparent focus:outline-none"
 
             >
               {isSelected && (
                 <span
+                  className="pointer-events-none absolute rounded-full"
                   style={{
-                    ...(chip.borderStyle || {}),
-                    ...(chip.borderTransform
-                      ? { transform: chip.borderTransform }
-                      : {}),
+                    inset: chip.borderInset || '-2.5px',
+                    border: `${chip.borderWidth || '3px'} solid #ffd700`,
+                    boxShadow: '0 0 10px 2px rgba(255, 215, 0, 0.9), inset 0 0 4px rgba(255, 215, 0, 0.5)',
+                    borderRadius: '50%',
+                    zIndex: 50,
                   }}
-                  className={`pointer-events-none absolute animate-pulse rounded-full border-[3px] border-yellow-300 shadow-[0_0_16px_#ffd700] ring-2 ring-yellow-400/90 ${chip.borderInset || chip.borderClassName || '-inset-2.5'
-                    }`}
                 />
               )}
             </button>
@@ -1569,10 +1558,10 @@ function RouletteMiniTimer() {
                 transformOrigin:
                   'center center',
               }}
-              className="group z-20 flex cursor-pointer items-center justify-center rounded-full  "
+              className="group z-20 flex cursor-pointer items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95"
 
             >
-              <span className="pointer-events-none absolute inset-0 rounded-full   " />
+              <span className="pointer-events-none absolute inset-0 rounded-full" />
 
               {betAmount > 0 && (
                 <PlacedChip
@@ -1652,10 +1641,10 @@ function RouletteMiniTimer() {
                 transformOrigin:
                   'center center',
               }}
-              className="group z-20 flex scale-105 cursor-pointer items-center justify-center rounded-md "
+              className="group z-20 flex scale-105 cursor-pointer items-center justify-center rounded-md transition-all hover:scale-105 active:scale-95"
 
             >
-              <span className="pointer-events-none absolute inset-0 rounded-md  " />
+              <span className="pointer-events-none absolute inset-0 rounded-md" />
 
               {betAmount > 0 && (
                 <PlacedChip

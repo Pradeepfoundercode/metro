@@ -23,3 +23,8 @@ export const getFunTargetWinAmount = async (userId) => {
   return response.data
 }
 
+export const takeAmount = async (payload) => {
+  const response = await API.post('/takeamount', payload)
+  return response.data
+}
+
