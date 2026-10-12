@@ -54,7 +54,7 @@ import {
 import { getGameId, createBetPayload } from '../../utils/helper'
 import { playCoinSplashSound, playGameTapSound, playTickSound, stopTickSound } from '../../utils/sound'
 import { speak } from '../../utils/audio'
-import { getFunRouletteBetHistory, getFunRouletteLast13Result, placeFunRouletteBet } from '../../services/funRoulette.service.js'
+import { getFunRouletteBetHistory, getFunRouletteLast13Result, placeFunRouletteBet } from '../../services/funroulette.service.js'
 import socket from '../../services/socket.service.js'
 
 

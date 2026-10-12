@@ -16,7 +16,7 @@ import { playGameTapSound } from '../../utils/sound'
 import GameHistoryPopup from '../../components/common/GameHistoryPopup'
 import PointTransferPopup from '../../components/common/PointTransferPopup'
 import HelpPopup from '../../components/common/HelpPopup'
-import { getFunRouletteBetHistory } from '../../services/funRoulette.service'
+import { getFunRouletteBetHistory } from '../../services/funroulette.service'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
