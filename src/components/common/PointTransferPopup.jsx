@@ -89,11 +89,11 @@ export default function PointTransferPopup({ isOpen, onClose }) {
 
   return (
     <div
-      className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[2px] select-none p-2 overflow-hidden"
+      className="absolute inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-[2px] select-none p-2 overflow-hidden"
       onClick={handleClose}
     >
       <div
-        className="relative flex h-[520px] w-[760px] max-w-[760px] max-h-[520px] shrink-0 flex-col items-center justify-start overflow-hidden px-6 pt-5 pb-6 drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
+        className="relative flex h-[600px] w-[800px] shrink-0 flex-col items-center justify-start overflow-hidden px-6 pt-5 pb-6 drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
         style={{
           backgroundImage: `url(${closeBg})`,
           backgroundSize: '100% 100%',
@@ -123,11 +123,11 @@ export default function PointTransferPopup({ isOpen, onClose }) {
           className="flex w-full flex-col items-center gap-[16px]"
         >
           {/* Row 1: To Username */}
-          <div className="flex w-full max-w-[650px] items-center justify-center gap-5">
-            <span className="w-[210px] text-left text-[26px] font-semibold text-white">
+          <div className="flex w-full  items-center justify-center gap-10">
+            <span className="w-[190px] text-left text-[26px] font-semibold text-white">
               To Username :
             </span>
-            <label className="flex h-[72px] w-[400px] cursor-text flex-col justify-start rounded-[10px] border border-white/50 bg-transparent px-4 pt-2 transition focus-within:border-white">
+            <label className="flex h-[100px] w-[450px] cursor-text flex-col justify-start rounded-[10px] border border-white/50 bg-transparent px-4 pt-2 transition focus-within:border-white">
               <input
                 type="text"
                 placeholder="Enter Username"
@@ -139,11 +139,11 @@ export default function PointTransferPopup({ isOpen, onClose }) {
           </div>
 
           {/* Row 2: Amount */}
-          <div className="flex w-full max-w-[650px] items-center justify-center gap-5">
+          <div className="flex w-full  items-center justify-center gap-5">
             <span className="w-[210px] text-left text-[26px] font-semibold text-white">
               Amount:
             </span>
-            <label className="flex h-[72px] w-[400px] cursor-text flex-col justify-start rounded-[10px] border border-white/50 bg-transparent px-4 pt-2 transition focus-within:border-white">
+            <label className="flex h-[100px] w-[455px] cursor-text flex-col justify-start rounded-[10px] border border-white/50 bg-transparent px-4 pt-2 transition focus-within:border-white">
               <input
                 type="text"
                 inputMode="numeric"
@@ -156,11 +156,11 @@ export default function PointTransferPopup({ isOpen, onClose }) {
           </div>
 
           {/* Row 3: Pin */}
-          <div className="flex w-full max-w-[650px] items-center justify-center gap-5">
+          <div className="flex w-full  items-center justify-center gap-5">
             <span className="w-[210px] text-left text-[26px] font-semibold text-white">
               Pin:
             </span>
-            <label className="flex h-[72px] w-[400px] cursor-text flex-col justify-start rounded-[10px] border border-white/50 bg-transparent px-4 pt-2 transition focus-within:border-white">
+            <label className="flex h-[100px] w-[455px] cursor-text flex-col justify-start rounded-[10px] border border-white/50 bg-transparent px-4 pt-2 transition focus-within:border-white">
               <input
                 type="text"
                 placeholder="Enter Pin"

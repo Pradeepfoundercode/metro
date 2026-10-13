@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useWalletStore } from '../../store/useWalletStore'
@@ -182,7 +182,8 @@ export default function FunRoulette() {
         previousTimerStatusRef.current = status;
 
         if (status === 2) {
-          // Betting phase khatam:
+          // Betting phase khatam - popup TURANT open hoga bina kisi API delay ke:
+          setIsPopupOpen(true);
           setBets({});
           setBetHistory([]);
           setShowWaitToComplete(false);
@@ -226,7 +227,6 @@ export default function FunRoulette() {
             }
 
             setTargetWinning(winItem);
-            setIsPopupOpen(true);
           })();
         }
 
@@ -262,20 +262,28 @@ export default function FunRoulette() {
 
 
 
-  useEffect(() => {
-    if (!user?.id) return
+  const fetchBetHistory = useCallback(async () => {
+    const activeUserId = user?.id || localStorage.getItem('userId') || localStorage.getItem('user_id')
+    if (!activeUserId) return
 
-    const fetchHistory = async () => {
-      try {
-        const res = await getFunRouletteBetHistory(user.id)
-        setHistoryData(res.data || [])
-      } catch (error) {
-        console.log(error)
-      }
+    try {
+      const res = await getFunRouletteBetHistory(activeUserId, 5)
+      const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : [])
+      setHistoryData(data)
+    } catch (error) {
+      console.error('Failed to fetch fun roulette bet history:', error)
     }
-
-    fetchHistory()
   }, [user?.id])
+
+  useEffect(() => {
+    fetchBetHistory()
+  }, [fetchBetHistory])
+
+  useEffect(() => {
+    if (isHistoryOpen) {
+      fetchBetHistory()
+    }
+  }, [isHistoryOpen, fetchBetHistory])
 
 
   const fetchLatestRouletteResults = async () => {
@@ -572,8 +580,8 @@ export default function FunRoulette() {
 
           <span
             className={`absolute font-inter font-semibold  ${small
-                ? 'text-[24px]'
-                : 'text-[28px]'
+              ? 'text-[24px]'
+              : 'text-[28px]'
               }`}
           >
             {value}
@@ -698,8 +706,8 @@ export default function FunRoulette() {
                       src={chip.img}
                       alt={`chip ${chip.value}`}
                       className={`h-auto w-full object-contain ${selectedChip === chip.value
-                          ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
-                          : ''
+                        ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
+                        : ''
                         }`}
                     />
                   </button>
@@ -721,8 +729,8 @@ export default function FunRoulette() {
                       src={chip.img}
                       alt={`chip ${chip.value}`}
                       className={`h-auto w-full object-contain ${selectedChip === chip.value
-                          ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
-                          : ''
+                        ? 'drop-shadow-[0_0_3px_var(--chip-glow)]'
+                        : ''
                         }`}
                     />
                   </button>
@@ -839,11 +847,11 @@ export default function FunRoulette() {
                       <span
                         key={`${value}-${index}`}
                         className={`text-[17px]  font-black drop-shadow ${value === '0' ||
-                            value === '00'
-                            ? 'text-[#39ff14]'
-                            : isRed
-                              ? 'text-[#ff3b30]'
-                              : 'text-white'
+                          value === '00'
+                          ? 'text-[#39ff14]'
+                          : isRed
+                            ? 'text-[#ff3b30]'
+                            : 'text-white'
                           }`}
                       >
                         {value}
@@ -865,8 +873,8 @@ export default function FunRoulette() {
                 onClick={handleBetOk}
                 disabled={isLocked}
                 className={`relative mr-[8%] flex w-[80%] items-center justify-center transition ${isLocked
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'cursor-pointer hover:brightness-110 active:scale-95'
+                  ? 'cursor-not-allowed opacity-60'
+                  : 'cursor-pointer hover:brightness-110 active:scale-95'
                   }`}
               >
 
@@ -1652,7 +1660,11 @@ export default function FunRoulette() {
 
             <button
               type="button"
-              onClick={() => setIsHistoryOpen(true)}
+              onClick={() => {
+                playGameTapSound()
+                fetchBetHistory()
+                setIsHistoryOpen(true)
+              }}
               className="ml-[8%] w-[26%] cursor-pointer transition hover:scale-105 active:scale-95"
             >
 
@@ -1740,6 +1752,7 @@ export default function FunRoulette() {
               setHistoryList(pendingHistoryListRef.current)
               pendingHistoryListRef.current = null
             }
+            fetchBetHistory()
           }}
         />
 

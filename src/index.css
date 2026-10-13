@@ -640,3 +640,27 @@ body {
   }
 }
 
+/* =========================================================
+   POPUP ANIMATIONS
+========================================================= */
+
+@keyframes wheelPopupRiseFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(420px);
+  }
+
+  60% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-wheel-slide-up {
+  animation: wheelPopupRiseFromBottom 0.28s cubic-bezier(0.1, 0.95, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}

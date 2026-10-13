@@ -18,6 +18,31 @@ export default function RouletteMachinePopup({
   const [isStopped, setIsStopped] = useState(false)
 
   const animRef = useRef(null)
+  const targetIdxRef = useRef(-1)
+
+  // Update target index whenever targetNumber or targetIndex arrives
+  useEffect(() => {
+    let resolvedIdx = -1
+
+    if (targetIndex !== undefined && targetIndex !== null && Number.isInteger(Number(targetIndex))) {
+      const idx = Number(targetIndex)
+      if (idx >= 0 && idx < ROULETTE_NUMBERS.length) {
+        resolvedIdx = idx
+      }
+    }
+
+    if (resolvedIdx === -1 && targetNumber !== undefined && targetNumber !== null) {
+      const searchNum = String(targetNumber).trim()
+      const foundIdx = ROULETTE_NUMBERS.findIndex((n) => String(n).trim() === searchNum)
+      if (foundIdx !== -1) {
+        resolvedIdx = foundIdx
+      }
+    }
+
+    if (resolvedIdx !== -1) {
+      targetIdxRef.current = resolvedIdx
+    }
+  }, [targetNumber, targetIndex])
 
   useEffect(() => {
     if (!isOpen) {
@@ -32,42 +57,36 @@ export default function RouletteMachinePopup({
     stopTickSound()
     playRouletteWheelSound()
 
-    let targetIdx = -1
+    let initialIdx = -1
 
     if (targetIndex !== undefined && targetIndex !== null && Number.isInteger(Number(targetIndex))) {
       const idx = Number(targetIndex)
       if (idx >= 0 && idx < ROULETTE_NUMBERS.length) {
-        targetIdx = idx
+        initialIdx = idx
       }
     }
 
-    if (targetIdx === -1 && targetNumber !== undefined && targetNumber !== null) {
+    if (initialIdx === -1 && targetNumber !== undefined && targetNumber !== null) {
       const searchNum = String(targetNumber).trim()
       const foundIdx = ROULETTE_NUMBERS.findIndex((n) => String(n).trim() === searchNum)
       if (foundIdx !== -1) {
-        targetIdx = foundIdx
+        initialIdx = foundIdx
       }
     }
 
-    if (targetIdx === -1) {
-      targetIdx = Math.floor(Math.random() * ROULETTE_NUMBERS.length)
+    if (initialIdx === -1) {
+      initialIdx = Math.floor(Math.random() * ROULETTE_NUMBERS.length)
     }
 
-    const winnerNumber = ROULETTE_NUMBERS[targetIdx]
+    targetIdxRef.current = initialIdx
 
     const POCKET_COUNT = ROULETTE_NUMBERS.length
     const POCKET_ANGLE = 360 / POCKET_COUNT
-
     const WHEEL_OFFSET = -POCKET_ANGLE
 
-    const pocketOffset =
-      targetIdx * POCKET_ANGLE +
-      POCKET_ANGLE / 2 +
-      WHEEL_OFFSET
-
-    const totalWheelSpins = 6
-    const totalBallSpins = 13
-    const spinDuration = 7600
+    const totalWheelSpins = 5
+    const totalBallSpins = 12
+    const spinDuration = 7500
     const startTime = performance.now()
 
     // Fast spin initially, followed by a smoother, gentle deceleration into the pocket
@@ -93,6 +112,12 @@ export default function RouletteMachinePopup({
       const currentWheelAngle = ease * (totalWheelSpins * 360)
       setWheelAngle(currentWheelAngle)
 
+      const currentTargetIdx = targetIdxRef.current !== -1 ? targetIdxRef.current : initialIdx
+      const pocketOffset =
+        currentTargetIdx * POCKET_ANGLE +
+        POCKET_ANGLE / 2 +
+        WHEEL_OFFSET
+
       const currentBallAngle = pocketOffset - (1 - ease) * (totalBallSpins * 360)
       setBallAngle(currentBallAngle)
 
@@ -101,11 +126,14 @@ export default function RouletteMachinePopup({
       } else {
         setIsStopped(true)
 
-        speak(`Winning number is ${winnerNumber}`)
+        const finalIdx = targetIdxRef.current !== -1 ? targetIdxRef.current : initialIdx
+        const finalWinnerNumber = ROULETTE_NUMBERS[finalIdx]
+
+        speak(`Winning number is ${finalWinnerNumber}`)
 
         onResult?.({
-          number: winnerNumber,
-          index: targetIdx,
+          number: finalWinnerNumber,
+          index: finalIdx,
         })
       }
     }
@@ -116,7 +144,7 @@ export default function RouletteMachinePopup({
       if (animRef.current) cancelAnimationFrame(animRef.current)
       stopRouletteWheelSound()
     }
-  }, [isOpen, targetNumber, targetIndex])
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -126,7 +154,7 @@ export default function RouletteMachinePopup({
       onClick={onClose}
     >
       <div
-        className="relative flex flex-col items-center justify-center"
+        className="relative flex flex-col items-center justify-center animate-wheel-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative h-[650px] w-[880px] select-none">

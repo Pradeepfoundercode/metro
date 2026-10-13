@@ -209,7 +209,7 @@ export default function DashboardPage() {
               onClick={() => setIsMenuOpen(false)}
             />
 
-            {/* Menu box using close_bg.png */}
+        
             <div
               style={{
                 backgroundImage: `url(${closeBg})`,
@@ -219,7 +219,7 @@ export default function DashboardPage() {
               className="absolute right-[80px] top-[74px] z-[70] flex w-[230px] flex-col gap-1 p-1 pb-4 drop-shadow-[0_12px_35px_rgba(0,0,0,0.95)]"
             >
               {[
-                { label: 'Pay History', action: () => handleMenuItem('Pay History') },
+                
                 { label: 'Point History', action: () => handleMenuItem('Point History') },
                 { label: 'Point Transfer', action: () => handleMenuItem('Point Transfer') },
                 { label: 'Game History', action: () => handleMenuItem('Game History') },

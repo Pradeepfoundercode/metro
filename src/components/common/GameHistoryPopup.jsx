@@ -21,7 +21,7 @@ export default function GameHistoryPopup({
 
   return (
     <div
-      className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[3px] transition-opacity duration-200 select-none"
+      className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[3px] select-none"
       onClick={onClose}
     >
       <div
